@@ -1,0 +1,81 @@
+{
+  "name": "@alekstar79/ykassa-contracts",
+  "description": "Shared TypeScript types, Zod schema, enum values and accent palette for the YooKassa MCP integrator.",
+  "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "keywords": [
+    "yookassa",
+    "mcp",
+    "contracts",
+    "zod",
+    "typescript",
+    "schema"
+  ],
+  "homepage": "https://github.com/alekstar79/ykassa-mcp-integrator/tree/main/packages/contracts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alekstar79/ykassa-mcp-integrator.git",
+    "directory": "packages/contracts"
+  },
+  "bugs": {
+    "url": "https://github.com/alekstar79/ykassa-mcp-integrator/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./palette": {
+      "types": "./dist/palette.d.ts",
+      "import": "./dist/palette.js"
+    },
+    "./defaults": {
+      "types": "./dist/defaults.d.ts",
+      "import": "./dist/defaults.js"
+    },
+    "./scenarios": {
+      "types": "./dist/scenarios.d.ts",
+      "import": "./dist/scenarios.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
