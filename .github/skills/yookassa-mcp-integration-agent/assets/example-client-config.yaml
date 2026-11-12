@@ -1,0 +1,38 @@
+# YooKassa MCP client configuration template.
+# Fill <SHOP_ID> and <MCP_TOKEN>, or use scripts/onboard-client.ts.
+
+shop_id: "<SHOP_ID>"
+mcp_token: "<MCP_TOKEN>"
+
+# Must be a subset of tools confirmed by tools/list at runtime.
+# Official MCP: create_payment, get_payment, get_payments_list,
+#               get_refund, get_refunds_list, create_invoice.
+# Additional npm-only tools require explicit user approval (ASM-NNN).
+allowed_scenarios:
+  - create_payment
+  - get_payment
+  - get_payments
+  - create_invoice
+  - get_invoice
+  - get_refund
+  - get_refunds
+
+# Amount in RUB at or above which approval is required.
+# 0 = require approval for every risky operation.
+# Large number (e.g., 1e9) = automate small operations.
+approval_threshold: 4000
+
+# Whether human approval is mandatory regardless of amount.
+require_human_confirmation: true
+
+# Branding for the agent.
+brand:
+  display_name: "Online English School"
+  tone: "friendly-professional"
+
+# Reference client metadata (demo materials only).
+demo_metrics:
+  monthly_payments: 3000
+  active_subscriptions: 800
+  monthly_recurring_charges: 120
+  average_check_rub: 3500
