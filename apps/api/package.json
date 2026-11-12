@@ -1,0 +1,90 @@
+{
+  "name": "@alekstar79/ykassa-api",
+  "description": "Headless YooKassa MCP agent API: MCP client, LLM orchestration, human-in-the-loop approvals.",
+  "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "keywords": [
+    "yookassa",
+    "mcp",
+    "ai-agent",
+    "express",
+    "typescript",
+    "llm",
+    "payments"
+  ],
+  "homepage": "https://github.com/alekstar79/ykassa-mcp-integrator/tree/main/apps/api#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alekstar79/ykassa-mcp-integrator.git",
+    "directory": "apps/api"
+  },
+  "bugs": {
+    "url": "https://github.com/alekstar79/ykassa-mcp-integrator/issues"
+  },
+  "main": "./dist/lib.js",
+  "module": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./lib": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "ykassa-api": "./dist/server.js"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@alekstar79/ykassa-contracts": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "js-yaml": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^26.6.6",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^5.1.0",
+    "supertest": "^7.3.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
