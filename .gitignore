@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+clients/*/.env
+logs/
+coverage/
+docs/demo-recording.mp4
+apps/cli/templates/
+apps/cli/dist/
+.DS_Store
+*.log
+.vite/
+.idea/
