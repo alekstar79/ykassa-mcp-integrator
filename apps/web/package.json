@@ -1,0 +1,37 @@
+{
+  "name": "@alekstar79/ykassa-web",
+  "description": "Vue 3 reference UI for the YooKassa MCP integrator. Built into @alekstar79/ykassa-mcp as static assets.",
+  "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "homepage": "https://github.com/alekstar79/ykassa-mcp-integrator/tree/main/apps/web#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alekstar79/ykassa-mcp-integrator.git",
+    "directory": "apps/web"
+  },
+  "bugs": {
+    "url": "https://github.com/alekstar79/ykassa-mcp-integrator/issues"
+  },
+  "scripts": {
+    "dev": "vite --host localhost",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@alekstar79/ykassa-contracts": "^1.0.0",
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/coverage-v8": "^5.1.0",
+    "jsdom": "^31.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.6",
+    "vitest": "^5.1.0"
+  }
+}
