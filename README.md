@@ -1,16 +1,15 @@
 [English](README.en.md) | [Русский](README.md)
 
-# YooKassa MCP Payment Agent
+# ЮKassa MCP Payment Agent
 
-![TypeScript](https://img.shields.io/badge/TypeScript-ESM-3178C6?logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white)
-![Vue 3](https://img.shields.io/badge/Vue.js-3-4FC08D?logo=vuedotjs&logoColor=white)
-![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![MCP](https://img.shields.io/badge/MCP-YooKassa-6E4AFF)
-![License: MIT](https://img.shields.io/badge/License-MIT-008080.svg)
-![GitHub](https://img.shields.io/badge/github-alekstar79%2Fykassa--mcp--integrator-blue?logo=github)
+[![TypeScript](https://img.shields.io/badge/TypeScript-ESM-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Vue 3](https://img.shields.io/badge/Vue.js-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MCP](https://img.shields.io/badge/MCP-YooKassa-6E4AFF)](https://mcp.yookassa.ru)
+[![License: MIT](https://img.shields.io/badge/License-MIT-008080.svg)](LICENSE)
 [![CI](https://github.com/alekstar79/ykassa-mcp-integrator/actions/workflows/ci.yml/badge.svg)](https://github.com/alekstar79/ykassa-mcp-integrator/actions/workflows/ci.yml)
-![npm](https://img.shields.io/badge/npm-@alekstar79/ykassa--mcp-cb3837?logo=npm)
+[![npm](https://img.shields.io/badge/npm-@alekstar79/ykassa--mcp-cb3837?logo=npm)](https://www.npmjs.com/package/@alekstar79/ykassa-mcp)
 
 Сервис принимает запросы на естественном языке, выбирает доступный инструмент
 YooKassa MCP и проверяет операцию перед выполнением. Запросы можно отправлять
