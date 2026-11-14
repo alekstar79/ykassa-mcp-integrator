@@ -17,6 +17,18 @@ secrets, requests the current MCP tool list, and sends eligible tools and the
 manager request to the configured LLM provider. The API validates proposed
 tool calls before executing them and records MCP results in the audit log.
 
+## Два представления архитектуры
+
+Этот документ — текстовое описание: компоненты, контракты, потоки данных. Рядом есть интерактивная карта: [https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html).
+
+Третье представление — короткая презентация для быстрого знакомства: [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html).
+
+Карта и текст дополняют друг друга:
+- **Текст** объясняет *почему* так (независимость слоёв, выбор Zod, причины отключения `create_invoice`).
+- **Карта** показывает *как* устроено: клик по узлу открывает Semantic passport с назначением компонента, его входящими и исходящими связями, потоками данных.
+
+Если вы читаете документ впервые, начните с карты — она даёт общую картину за 30 секунд. Текст ниже — для деталей.
+
 ## Application boundaries
 
 - `apps/api` is headless and does not import either Vue application.
@@ -61,6 +73,8 @@ deployments should use a supported provider endpoint and API key.
    reconnects to MCP, obtains the current tool list, and validates the
    pending calls against the current configuration before execution.
 
+> Поток risky-вызова (UI → API → LLM → approval → MCP) на интерактивной карте подсвечивается кликом по узлу `Headless API`.
+
 Pending approvals are held in memory and expire after 15 minutes. They are
 lost when the API process restarts.
 
@@ -81,6 +95,8 @@ Each MCP tool execution is appended to `logs/mcp-calls.jsonl`. Entries
 include a timestamp, tenant `shop_id`, tool name, sanitized arguments, and
 either a result or an error. The log may contain request data and should be
 protected accordingly.
+
+> Узел `Audit log` на карте показывает, куда стекаются все вызовы MCP.
 
 ## Client configurator flow
 

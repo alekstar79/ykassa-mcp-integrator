@@ -99,6 +99,10 @@ flowchart LR
     API --> Audit["logs/mcp-calls.jsonl"]
 ```
 
+Интерактивная версия этой схемы — [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html). Клик по узлу открывает Semantic passport: назначение компонента, его связи, потоки данных. Полезно, когда нужно быстро понять, как проходит запрос от менеджера до MCP и где включается human-in-the-loop.
+
+Презентация проекта (8 слайдов): [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html).
+
 - `apps/api` - headless API: MCP-клиент, LLM-оркестрация, подтверждения и аудит.
   Пакет `@alekstar79/ykassa-api` можно использовать как библиотеку.
 - `apps/web` - reference UI на Vue 3. Клиент может заменить его собственным

@@ -100,6 +100,10 @@ flowchart LR
     API --> Audit["logs/mcp-calls.jsonl"]
 ```
 
+Interactive version of this diagram — [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html). Click on a node to open its Semantic passport: purpose, connections, data flows. Useful for tracing a request from the manager to MCP and seeing where human-in-the-loop kicks in.
+
+Project presentation (8 slides): [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html).
+
 - `apps/api` is the headless API: MCP client, LLM orchestration, approvals,
   and audit logging. The `@alekstar79/ykassa-api` package can be used as a
   library.
