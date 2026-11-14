@@ -1,0 +1,52 @@
+# Example client template. Copy this directory with:
+#   cp -r clients/example clients/<name>
+# or run:
+#   npx @alekstar79/ykassa-mcp init <name>
+# Edit config.yaml and fill in the client's .env file.
+
+# MCP scenarios enabled for this client. Keep only the scenarios the client
+# needs; at least one scenario is required.
+# Known scenarios: create_payment, get_payment, get_payments, get_invoice,
+# get_refund, get_refunds, create_invoice.
+allowed_scenarios:
+  - create_payment
+  - get_payment
+  - get_payments
+  - get_invoice
+  - get_refund
+  - get_refunds
+  - create_invoice
+
+# Amount in RUB at or above which the operation requires approval. Must be
+# zero or greater.
+approval_threshold: 4000
+
+# When true, require explicit human confirmation regardless of amount.
+require_human_confirmation: false
+
+# Request and attachment limits. max_messages: integer from 1 to 100;
+# max_attachment_kb: integer from 1 to 1024.
+limits:
+  max_messages: 20
+  max_attachment_kb: 100
+
+# Optional non-secret brand information. display_name is shown in the UI.
+brand:
+  display_name: "Example Client"
+
+# Reference UI configuration. Use "custom-ui" when the client supplies its
+# own interface; use "reference-ui" for the bundled reference interface.
+# accent: navy | terracotta | forest | graphite | cobalt | crimson
+# radius: 0 | 2 | 4 | 8
+# shadow: none | soft | medium
+# font_pair: manrope+jetbrains | inter+jetbrains
+# form_style: flat | card
+# h1_size: s | m | l
+ui:
+  mode: reference-ui
+  accent: navy
+  radius: 2
+  shadow: soft
+  font_pair: manrope+jetbrains
+  form_style: flat
+  h1_size: m
