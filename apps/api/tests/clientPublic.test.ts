@@ -9,6 +9,36 @@ import { clientPublicRouter } from '../src/routes/clientPublic.js';
 
 const temporaryDirectories: string[] = [];
 
+async function createClientFixture(configContents?: string): Promise<string> {
+  const temporaryDirectory = await mkdtemp(
+    path.join(CLIENTS_DIR, 'vitest-client-'),
+  );
+  const directory = path.join(
+    CLIENTS_DIR,
+    path.basename(temporaryDirectory).toLowerCase(),
+  );
+  if (temporaryDirectory !== directory) {
+    await rename(temporaryDirectory, directory);
+  }
+  temporaryDirectories.push(directory);
+  await writeFile(
+    path.join(directory, 'config.yaml'),
+    configContents ??
+      [
+        'allowed_scenarios: [create_payment]',
+        'approval_threshold: 1000',
+        'require_human_confirmation: true',
+        'brand:',
+        '  display_name: Test Brand',
+      ].join('\n'),
+  );
+  await writeFile(
+    path.join(directory, '.env'),
+    'YOOKASSA_SHOP_ID=test-shop-only\nYOOKASSA_MCP_TOKEN=test-token-only\n',
+  );
+  return path.basename(directory);
+}
+
 function createApp() {
   const app = express();
   app.use('/api/clients', clientPublicRouter);
@@ -25,44 +55,40 @@ describe('GET /api/clients/:name/public', () => {
     );
   });
 
-  it.each(['online-school', 'delivery-service'])(
-    'returns public UI and limit defaults for %s',
-    async (clientName) => {
-      const response = await request(createApp()).get(
-        `/api/clients/${clientName}/public`,
-      );
+  it('returns public UI and limit defaults for an existing client', async () => {
+    const clientName = await createClientFixture();
+    const response = await request(createApp()).get(
+      `/api/clients/${clientName}/public`,
+    );
 
-      expect(response.status).toBe(200);
-      expect(response.body.ui).toEqual({
-        mode: 'reference-ui',
-        accent: 'navy',
-        radius: 2,
-        shadow: 'soft',
-        font_pair: 'manrope+jetbrains',
-        form_style: 'flat',
-        h1_size: 'm',
-      });
-      expect(response.body.limits).toEqual({
-        max_messages: 20,
-        max_attachment_kb: 100,
-      });
-      expect(response.body).not.toHaveProperty('shop_id');
-      expect(response.body).not.toHaveProperty('mcp_token');
-    },
-  );
+    expect(response.status).toBe(200);
+    expect(response.body.ui).toEqual({
+      mode: 'reference-ui',
+      accent: 'navy',
+      radius: 2,
+      shadow: 'soft',
+      font_pair: 'manrope+jetbrains',
+      form_style: 'flat',
+      h1_size: 'm',
+    });
+    expect(response.body.limits).toEqual({
+      max_messages: 20,
+      max_attachment_kb: 100,
+    });
+    expect(response.body).not.toHaveProperty('shop_id');
+    expect(response.body).not.toHaveProperty('mcp_token');
+  });
+
+  it('returns 404 for a nonexistent client', async () => {
+    const response = await request(createApp()).get(
+      '/api/clients/nonexistent-client-zz/public',
+    );
+
+    expect(response.status).toBe(404);
+  });
 
   it('returns normalized public settings without YAML secret fields', async () => {
-    const temporaryDirectory = await mkdtemp(
-      path.join(CLIENTS_DIR, 'vitest-client-'),
-    );
-    const directory = path.join(
-      CLIENTS_DIR,
-      path.basename(temporaryDirectory).toLowerCase(),
-    );
-    await rename(temporaryDirectory, directory);
-    temporaryDirectories.push(directory);
-    await writeFile(
-      path.join(directory, 'config.yaml'),
+    const clientName = await createClientFixture(
       [
         'allowed_scenarios: [create_payment]',
         'approval_threshold: 1000',
@@ -76,7 +102,7 @@ describe('GET /api/clients/:name/public', () => {
     );
 
     const response = await request(createApp()).get(
-      `/api/clients/${path.basename(directory)}/public`,
+      `/api/clients/${clientName}/public`,
     );
 
     expect(response.status, JSON.stringify(response.body)).toBe(200);
