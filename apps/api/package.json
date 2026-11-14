@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-api",
   "description": "Headless YooKassa MCP agent API: MCP client, LLM orchestration, human-in-the-loop approvals.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "private": false,
@@ -52,9 +52,6 @@
     "README.md",
     "LICENSE"
   ],
-  "bin": {
-    "ykassa-api": "./dist/server.js"
-  },
   "scripts": {
     "start": "tsx src/main.ts",
     "build": "tsc -p tsconfig.build.json",

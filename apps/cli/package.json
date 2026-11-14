@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-mcp",
   "description": "YooKassa MCP integrator CLI umbrella: init client config, start API, open reference UI and configurator.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "private": false,
@@ -38,7 +38,7 @@
     "prepublishOnly": "node ../../scripts/sync-templates.mjs"
   },
   "dependencies": {
-    "@alekstar79/ykassa-api": "^1.0.0",
+    "@alekstar79/ykassa-api": "^1.0.1",
     "@alekstar79/ykassa-contracts": "^1.0.0",
     "express": "^5.3.0"
   },
