@@ -4,11 +4,11 @@
 
 ```mermaid
 flowchart LR
-    Manager[Manager] --> UI[UI (Vue)]
-    UI -->|HTTP| API[API (Express)]
-    API -->|MCP| YooKassa[YooKassa MCP]
-    API --> LLM[LLM provider]
-    API --> Audit[logs/mcp-calls.jsonl]
+    Manager["Manager"] --> UI["UI (Vue)"]
+    UI -->|HTTP| API["API (Express)"]
+    API -->|MCP| MCP["YooKassa MCP"]
+    API -->|LLM| LLM["LLM provider"]
+    API -->|Audit| Logs["logs/mcp-calls.jsonl"]
 ```
 
 The reference UI and independently built client interfaces communicate with

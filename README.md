@@ -7,9 +7,9 @@
 ![Vue 3](https://img.shields.io/badge/Vue.js-3-4FC08D?logo=vuedotjs&logoColor=white)
 ![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-YooKassa-6E4AFF)
-![Tests](https://img.shields.io/badge/tests-103_passed-brightgreen)
 ![License: MIT](https://img.shields.io/badge/License-MIT-008080.svg)
 ![GitHub](https://img.shields.io/badge/github-alekstar79%2Fykassa--mcp--integrator-blue?logo=github)
+[![CI](https://github.com/alekstar79/ykassa-mcp-integrator/actions/workflows/ci.yml/badge.svg)](https://github.com/alekstar79/ykassa-mcp-integrator/actions/workflows/ci.yml)
 ![npm](https://img.shields.io/badge/npm-@alekstar79/ykassa--mcp-cb3837?logo=npm)
 
 Сервис принимает запросы на естественном языке, выбирает доступный инструмент
@@ -97,7 +97,7 @@ flowchart LR
     UI -->|HTTP| API[API на Express]
     API -->|MCP| YooKassa[YooKassa MCP]
     API --> LLM[LLM-провайдер]
-    API --> Audit[logs/mcp-calls.jsonl]
+    API --> Audit["logs/mcp-calls.jsonl"]
 ```
 
 - `apps/api` - headless API: MCP-клиент, LLM-оркестрация, подтверждения и аудит.
@@ -178,28 +178,41 @@ OpenAI-совместимого proxy описана в [CONTRIBUTING.md](CONTRI
 `01-07`: reference UI (светлая и тёмная темы, мобильный экран, английский язык).
 `08-12`: конфигуратор (настройки, предпросмотр, тёмная тема, мобильный экран).
 
-<table align="center">
+<details>
+<summary>Скриншоты</summary>
+
+<table>
   <tr>
-    <td align="center"><a href="docs/screenshots/01-light-desktop.png"><img src="docs/screenshots/01-light-desktop.png" width="360" alt="Reference UI, светлая тема" /></a></td>
-    <td align="center"><a href="docs/screenshots/02-dark-desktop.png"><img src="docs/screenshots/02-dark-desktop.png" width="360" alt="Reference UI, тёмная тема" /></a></td>
-    <td align="center"><a href="docs/screenshots/03-result-desktop.png"><img src="docs/screenshots/03-result-desktop.png" width="360" alt="Ответ агента и вызов инструмента" /></a></td>
+    <td align="center"><a href="docs/screenshots/01-light-desktop.png"><img src="docs/screenshots/01-light-desktop.png" width="400" alt="Reference UI, light theme, desktop"></a><br><sub>01. Reference UI · light · desktop</sub></td>
+    <td align="center"><a href="docs/screenshots/02-dark-desktop.png"><img src="docs/screenshots/02-dark-desktop.png" width="400" alt="Reference UI, dark theme, desktop"></a><br><sub>02. Reference UI · dark · desktop</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/04-approval-desktop.png"><img src="docs/screenshots/04-approval-desktop.png" width="360" alt="Подтверждение операции" /></a></td>
-    <td align="center"><a href="docs/screenshots/05-light-mobile.png"><img src="docs/screenshots/05-light-mobile.png" width="360" alt="Reference UI на мобильном, светлая тема" /></a></td>
-    <td align="center"><a href="docs/screenshots/06-dark-mobile.png"><img src="docs/screenshots/06-dark-mobile.png" width="360" alt="Reference UI на мобильном, тёмная тема" /></a></td>
+    <td align="center"><a href="docs/screenshots/03-result-desktop.png"><img src="docs/screenshots/03-result-desktop.png" width="400" alt="Result and tool calls"></a><br><sub>03. Result and tool calls</sub></td>
+    <td align="center"><a href="docs/screenshots/04-approval-desktop.png"><img src="docs/screenshots/04-approval-desktop.png" width="400" alt="Approval card"></a><br><sub>04. Human-in-the-loop approval</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/07-locale-en.png"><img src="docs/screenshots/07-locale-en.png" width="360" alt="Reference UI на английском" /></a></td>
-    <td align="center"><a href="docs/screenshots/08-configurator-settings-light-1280.png"><img src="docs/screenshots/08-configurator-settings-light-1280.png" width="360" alt="Конфигуратор, настройки" /></a></td>
-    <td align="center"><a href="docs/screenshots/09-configurator-preview-light-1280.png"><img src="docs/screenshots/09-configurator-preview-light-1280.png" width="360" alt="Конфигуратор, предпросмотр" /></a></td>
+    <td align="center"><a href="docs/screenshots/05-light-mobile.png"><img src="docs/screenshots/05-light-mobile.png" width="400" alt="Mobile, light theme"></a><br><sub>05. Reference UI · light · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/06-dark-mobile.png"><img src="docs/screenshots/06-dark-mobile.png" width="400" alt="Mobile, dark theme"></a><br><sub>06. Reference UI · dark · mobile</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark-1280.png"><img src="docs/screenshots/10-configurator-settings-dark-1280.png" width="360" alt="Конфигуратор, тёмная тема" /></a></td>
-    <td align="center"><a href="docs/screenshots/11-configurator-preview-dark-1280.png"><img src="docs/screenshots/11-configurator-preview-dark-1280.png" width="360" alt="Предпросмотр конфигуратора, тёмная тема" /></a></td>
-    <td align="center"><a href="docs/screenshots/12-configurator-mobile-375.png"><img src="docs/screenshots/12-configurator-mobile-375.png" width="360" alt="Конфигуратор на мобильном экране" /></a></td>
+    <td align="center"><a href="docs/screenshots/07-locale-en.png"><img src="docs/screenshots/07-locale-en.png" width="400" alt="English locale"></a><br><sub>07. Reference UI · English locale</sub></td>
+    <td align="center"></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/08-configurator-settings-light-1280.png"><img src="docs/screenshots/08-configurator-settings-light-1280.png" width="400" alt="Configurator settings, light"></a><br><sub>08. Configurator · settings · light</sub></td>
+    <td align="center"><a href="docs/screenshots/09-configurator-preview-light-1280.png"><img src="docs/screenshots/09-configurator-preview-light-1280.png" width="400" alt="Configurator preview, light"></a><br><sub>09. Configurator · preview · light</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark-1280.png"><img src="docs/screenshots/10-configurator-settings-dark-1280.png" width="400" alt="Configurator settings, dark"></a><br><sub>10. Configurator · settings · dark</sub></td>
+    <td align="center"><a href="docs/screenshots/11-configurator-preview-dark-1280.png"><img src="docs/screenshots/11-configurator-preview-dark-1280.png" width="400" alt="Configurator preview, dark"></a><br><sub>11. Configurator · preview · dark</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/screenshots/12-configurator-mobile-375.png"><img src="docs/screenshots/12-configurator-mobile-375.png" width="400" alt="Configurator, mobile"></a><br><sub>12. Configurator · mobile</sub></td>
+    <td align="center"></td>
   </tr>
 </table>
+
+</details>
 
 ## Известные ограничения
 
@@ -222,9 +235,8 @@ OpenAI-совместимого proxy описана в [CONTRIBUTING.md](CONTRI
 ## Документация
 
 - [Руководство контрибьютора](CONTRIBUTING.md)
+- [Инструкции для AI-агентов](AGENTS.md)
 - [Архитектура](docs/architecture.md)
 - [HTTP-контракт](docs/api-contract.md)
-- [План презентации](docs/demo-plan.md)
-- [Метрики](docs/metrics.md)
 - [Настройка локального LLM proxy](docs/copilot-proxy.md)
 - [Лицензия MIT](LICENSE)
