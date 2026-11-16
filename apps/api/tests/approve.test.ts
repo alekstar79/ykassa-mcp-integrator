@@ -3,6 +3,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LLMProvider } from '../src/types.js';
 import type { ContinuationState } from '../src/agentTypes.js';
+import type { ClientConfig } from '../src/config.js';
 import { runAgent } from '../src/agent.js';
 import { createProviderFromEnv } from '../src/llm.js';
 import { loadClientConfig, loadClientSecrets } from '../src/config.js';
@@ -33,10 +34,11 @@ vi.mock('../src/config.js', async (importOriginal) => {
 });
 vi.mock('../src/audit.js', () => ({ appendCallLog: mocks.appendCallLog }));
 
-const config = {
+const config: ClientConfig = {
   allowed_scenarios: ['create_payment'],
   approval_threshold: 4000,
   require_human_confirmation: true,
+  brand: undefined,
   ui: {
     mode: 'reference-ui' as const,
     accent: 'navy' as const,
@@ -49,6 +51,12 @@ const config = {
   limits: {
     max_messages: 20,
     max_attachment_kb: 100,
+  },
+  defaults: {
+    currency: 'RUB' as const,
+    vat_code: 1,
+    capture: true,
+    invoice_expiry_days: 30,
   },
 };
 const provider: LLMProvider = {

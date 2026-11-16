@@ -1,4 +1,5 @@
 import type { ChatMessage, LLMProvider } from './llm.js';
+import type { ClientConfig, ClientDefaults } from './config.js';
 
 export interface AgentConfig {
   mcpToken: string;
@@ -6,7 +7,9 @@ export interface AgentConfig {
   approvalThreshold: number;
   requireHumanConfirmation: boolean;
   allowedScenarios: string[];
-  systemPrompt: string;
+  defaults: ClientDefaults;
+  overrides?: Partial<ClientDefaults>;
+  clientConfig: ClientConfig;
 }
 
 export interface ContinuationState {

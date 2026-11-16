@@ -2,11 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { ChatMessage, ToolDefinition } from './llm.js';
-import { enforceFieldAllowlist } from './allowlist.js';
+import { enforceFieldAllowlist, isToolAvailable } from './allowlist.js';
 import { resumeContinuation } from './continuation.js';
 import { isRiskyOperation } from './risky.js';
 import { parseArguments, sanitizeReply } from './sanitize.js';
 import { executeToolCall } from './toolExecutor.js';
+import { enrichToolCall } from './enrich.js';
+import { requireValidToolCall } from './validateToolCall.js';
+import { buildSystemPrompt } from './prompts.js';
 import type {
   AgentConfig,
   AgentDeps,
@@ -23,6 +26,12 @@ export async function runAgent(
   deps: AgentDeps,
   continuation?: ContinuationState,
 ): Promise<AgentResult> {
+  const effectiveDefaults = { ...config.defaults, ...config.overrides };
+  const effectiveConfig = { ...config, defaults: effectiveDefaults };
+  const systemPrompt = buildSystemPrompt(
+    config.clientConfig,
+    config.overrides,
+  );
   const mcpClient = new Client({ name: 'yookassa-agent', version: '1.0.0' });
   const transport = new StreamableHTTPClientTransport(new URL(config.mcpUrl), {
     requestInit: {
@@ -35,9 +44,12 @@ export async function runAgent(
     const toolsListResponse = await mcpClient.listTools();
     const allowedScenarios = new Set(config.allowedScenarios);
     const tools: ToolDefinition[] = toolsListResponse.tools
-      .filter(
-        (tool) =>
-          allowedScenarios.has(tool.name) && tool.name !== 'create_invoice',
+      .filter((tool) =>
+        isToolAvailable(
+          tool.name,
+          allowedScenarios,
+          effectiveDefaults.vat_code,
+        ),
       )
       .map((tool) => ({
         name: tool.name,
@@ -51,13 +63,13 @@ export async function runAgent(
     const executedToolCalls: ToolCallRecord[] = [];
     const history: ChatMessage[] = continuation
       ? [...continuation.messages]
-      : [{ role: 'system', content: config.systemPrompt }, ...messages];
+      : [{ role: 'system', content: systemPrompt }, ...messages];
     let roundtrip = continuation?.roundtrip ?? 0;
 
     const wasRejected = await resumeContinuation(
       continuation,
-      config,
-      new Set(toolsListResponse.tools.map((tool) => tool.name)),
+      effectiveConfig,
+      toolsListResponse.tools,
       new Set(tools.map((tool) => tool.name)),
       mcpClient,
       history,
@@ -178,10 +190,18 @@ export async function runAgent(
         const sanitizedToolCall = {
           id: toolCall.id,
           name: toolCall.name,
-          args: enforceFieldAllowlist(toolCall.name, toolCall.args),
+          args: requireValidToolCall(
+            toolCall.name,
+            enrichToolCall(
+              toolCall.name,
+              enforceFieldAllowlist(toolCall.name, toolCall.args),
+              effectiveConfig,
+            ).args,
+            toolsListResponse.tools,
+          ),
         };
         validatedToolCalls.push(sanitizedToolCall);
-        if (isRiskyOperation(sanitizedToolCall, config)) {
+        if (isRiskyOperation(sanitizedToolCall, effectiveConfig)) {
           riskyToolCalls.push(sanitizedToolCall);
         }
       }
@@ -190,7 +210,10 @@ export async function runAgent(
         const proposedActions = validatedToolCalls.map(({ name, args }) => ({
           tool: name,
           args,
-          requires_confirmation: isRiskyOperation({ name, args }, config),
+          requires_confirmation: isRiskyOperation(
+            { name, args },
+            effectiveConfig,
+          ),
         }));
         return {
           reply:

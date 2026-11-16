@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { isClientVatCode } from '@alekstar79/ykassa-contracts';
 import { createProviderFromEnv } from '../llm.js';
 import { runAgent } from '../agent.js';
 import {
@@ -12,7 +13,9 @@ import {
 import { appendCallLog } from '../audit.js';
 import { HttpError, isRecord } from '../http.js';
 import { pendingApprovals } from '../pendingApprovals.js';
-import { buildSystemPrompt } from '../prompts.js';
+import { ToolValidationError } from '../validateToolCall.js';
+import type { AgentResult } from '../agentTypes.js';
+import type { ClientDefaults } from '../config.js';
 
 interface AskRouterOptions {
   clientsDir?: string;
@@ -36,6 +39,7 @@ async function handleAsk(
   mcpUrl: string,
 ): Promise<void> {
   const clientName = validateClientName(req.body?.client);
+  const overrides = parseOverrides(req.body?.overrides);
   const config = await loadClientConfig(clientName, clientsDir);
   const attachment = validateAttachment(
     req.body?.attachment,
@@ -108,22 +112,33 @@ async function handleAsk(
     ];
   }
 
-  const result = await runAgent(
-    messages,
-    {
-      mcpToken: secrets.mcpToken,
-      mcpUrl,
-      approvalThreshold: config.approval_threshold,
-      requireHumanConfirmation: config.require_human_confirmation,
-      allowedScenarios: config.allowed_scenarios,
-      systemPrompt: buildSystemPrompt(config),
-    },
-    {
-      provider,
-      model,
-      logToolCall: async (entry) => appendCallLog(secrets.shopId, entry),
-    },
-  );
+  let result: AgentResult;
+  try {
+    result = await runAgent(
+      messages,
+      {
+        mcpToken: secrets.mcpToken,
+        mcpUrl,
+        approvalThreshold: config.approval_threshold,
+        requireHumanConfirmation: config.require_human_confirmation,
+        allowedScenarios: config.allowed_scenarios,
+        defaults: config.defaults,
+        overrides,
+        clientConfig: config,
+      },
+      {
+        provider,
+        model,
+        logToolCall: async (entry) => appendCallLog(secrets.shopId, entry),
+      },
+    );
+  } catch (error) {
+    if (error instanceof ToolValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 
   if (result.requiresApproval !== undefined) {
     const primaryAction = result.requiresApproval.proposedActions.find(
@@ -162,3 +177,80 @@ async function handleAsk(
 }
 
 export const askRouter = createAskRouter();
+
+function parseOverrides(value: unknown): Partial<ClientDefaults> | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) {
+    throw new HttpError(400, '"overrides" must be an object.');
+  }
+
+  const allowedFields = new Set([
+    'currency',
+    'vat_code',
+    'capture',
+    'return_url',
+    'invoice_expiry_days',
+  ]);
+  for (const key of Object.keys(value)) {
+    if (!allowedFields.has(key)) {
+      throw new HttpError(400, `"overrides.${key}" is not supported.`);
+    }
+  }
+
+  const overrides: Partial<ClientDefaults> = {};
+  if (value.currency !== undefined) {
+    if (
+      value.currency !== 'RUB' &&
+      value.currency !== 'USD' &&
+      value.currency !== 'EUR'
+    ) {
+      throw new HttpError(
+        400,
+        '"overrides.currency" must be RUB, USD, or EUR.',
+      );
+    }
+    overrides.currency = value.currency;
+  }
+  if (value.vat_code !== undefined) {
+    if (!isClientVatCode(value.vat_code)) {
+      throw new HttpError(
+        400,
+        '"overrides.vat_code" must be a supported YooKassa VAT code from 1 to 12.',
+      );
+    }
+    overrides.vat_code = value.vat_code;
+  }
+  if (value.capture !== undefined) {
+    if (typeof value.capture !== 'boolean') {
+      throw new HttpError(400, '"overrides.capture" must be a boolean.');
+    }
+    overrides.capture = value.capture;
+  }
+  if (value.return_url !== undefined) {
+    if (
+      typeof value.return_url !== 'string' ||
+      (value.return_url !== '' && !/^https?:\/\//i.test(value.return_url))
+    ) {
+      throw new HttpError(
+        400,
+        '"overrides.return_url" must be empty or start with http:// or https://.',
+      );
+    }
+    overrides.return_url = value.return_url;
+  }
+  if (value.invoice_expiry_days !== undefined) {
+    if (
+      typeof value.invoice_expiry_days !== 'number' ||
+      !Number.isInteger(value.invoice_expiry_days) ||
+      value.invoice_expiry_days < 1 ||
+      value.invoice_expiry_days > 30
+    ) {
+      throw new HttpError(
+        400,
+        '"overrides.invoice_expiry_days" must be an integer from 1 to 30.',
+      );
+    }
+    overrides.invoice_expiry_days = value.invoice_expiry_days;
+  }
+  return overrides;
+}

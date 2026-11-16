@@ -10,7 +10,6 @@ import {
 import { appendCallLog } from '../audit.js';
 import { HttpError, isRecord } from '../http.js';
 import { pendingApprovals } from '../pendingApprovals.js';
-import { buildSystemPrompt } from '../prompts.js';
 
 interface ApproveRouterOptions {
   clientsDir?: string;
@@ -68,7 +67,8 @@ async function handleApprove(
       approvalThreshold: config.approval_threshold,
       requireHumanConfirmation: config.require_human_confirmation,
       allowedScenarios: config.allowed_scenarios,
-      systemPrompt: buildSystemPrompt(config),
+      defaults: config.defaults,
+      clientConfig: config,
     },
     {
       provider,

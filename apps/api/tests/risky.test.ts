@@ -8,7 +8,34 @@ const config: AgentConfig = {
   approvalThreshold: 1000,
   requireHumanConfirmation: false,
   allowedScenarios: ['create_payment'],
-  systemPrompt: '',
+  defaults: {
+    currency: 'RUB',
+    vat_code: 1,
+    capture: true,
+    invoice_expiry_days: 30,
+  },
+  clientConfig: {
+    allowed_scenarios: ['create_payment'],
+    approval_threshold: 1000,
+    require_human_confirmation: false,
+    brand: undefined,
+    ui: {
+      mode: 'reference-ui',
+      accent: 'navy',
+      radius: 2,
+      shadow: 'soft',
+      font_pair: 'manrope+jetbrains',
+      form_style: 'flat',
+      h1_size: 'm',
+    },
+    limits: { max_messages: 20, max_attachment_kb: 100 },
+    defaults: {
+      currency: 'RUB',
+      vat_code: 1,
+      capture: true,
+      invoice_expiry_days: 30,
+    },
+  },
 };
 
 describe('isRiskyOperation', () => {
@@ -49,5 +76,32 @@ describe('isRiskyOperation', () => {
     expect(
       isRiskyOperation({ name: 'get_payment', args: { id: 'pay-1' } }, config),
     ).toBe(false);
+  });
+
+  it('requires approval for invoices above the threshold or with unknown totals', () => {
+    expect(
+      isRiskyOperation(
+        {
+          name: 'create_invoice',
+          args: { amount: { value: '1000.01', currency: 'RUB' } },
+        },
+        config,
+      ),
+    ).toBe(true);
+    expect(
+      isRiskyOperation(
+        {
+          name: 'create_invoice',
+          args: { amount: { value: '500', currency: 'RUB' } },
+        },
+        config,
+      ),
+    ).toBe(false);
+    expect(
+      isRiskyOperation(
+        { name: 'create_invoice', args: { cart: [{ description: 'Course' }] } },
+        config,
+      ),
+    ).toBe(true);
   });
 });

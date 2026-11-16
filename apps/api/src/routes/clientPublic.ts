@@ -25,18 +25,6 @@ export function createClientPublicRouter(
     if (typeof rawBrand?.display_name === 'string') {
       brand.display_name = rawBrand.display_name;
     }
-    if (typeof rawBrand?.tone === 'string') {
-      brand.tone = rawBrand.tone;
-    }
-    if (
-      typeof rawBrand?.primary_color === 'string' &&
-      /^#[0-9a-fA-F]{6}$/.test(rawBrand.primary_color)
-    ) {
-      brand.primary_color = rawBrand.primary_color;
-    }
-    if (typeof rawBrand?.greeting === 'string') {
-      brand.greeting = rawBrand.greeting;
-    }
 
     const publicConfig: PublicClientConfig = {
       brand,

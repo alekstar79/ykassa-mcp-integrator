@@ -57,6 +57,12 @@ describe('parseClientConfig', () => {
         max_messages: 20,
         max_attachment_kb: 100,
       },
+      defaults: {
+        currency: 'RUB',
+        vat_code: 1,
+        capture: true,
+        invoice_expiry_days: 30,
+      },
     });
   });
 

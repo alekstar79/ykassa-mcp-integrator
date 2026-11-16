@@ -1,5 +1,10 @@
 import { enforceFieldAllowlist } from './allowlist.js';
+import { enrichToolCall } from './enrich.js';
 import { executeToolCall } from './toolExecutor.js';
+import {
+  requireValidToolCall,
+  type ToolSchemaEntry,
+} from './validateToolCall.js';
 import type {
   AgentConfig,
   AgentDeps,
@@ -21,7 +26,7 @@ export class OperationNoLongerAllowedError extends Error {
 export async function resumeContinuation(
   continuation: ContinuationState | undefined,
   config: AgentConfig,
-  currentMcpTools: Set<string>,
+  toolsList: readonly ToolSchemaEntry[],
   availableTools: Set<string>,
   mcpClient: Client,
   history: ChatMessage[],
@@ -29,6 +34,7 @@ export async function resumeContinuation(
   deps: AgentDeps,
 ): Promise<boolean> {
   if (continuation && continuation.rejected !== true) {
+    const currentMcpTools = new Set(toolsList.map((tool) => tool.name));
     const allowedScenarios = new Set(config.allowedScenarios);
     const hasDisallowedCall = continuation.pendingToolCalls.some(
       (toolCall) =>
@@ -60,10 +66,15 @@ export async function resumeContinuation(
         continue;
       }
 
+      const enrichedArgs = requireValidToolCall(
+        pendingToolCall.name,
+        enrichToolCall(pendingToolCall.name, sanitizedArgs, config).args,
+        toolsList,
+      );
       await executeToolCall(
         mcpClient,
         pendingToolCall,
-        sanitizedArgs,
+        enrichedArgs,
         history,
         executedToolCalls,
         deps,

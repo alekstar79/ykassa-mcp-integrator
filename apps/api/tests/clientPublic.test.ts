@@ -97,6 +97,9 @@ describe('GET /api/clients/:name/public', () => {
         'mcp_token: private-token-value',
         'brand:',
         '  display_name: Public Brand',
+        '  tone: professional',
+        '  primary_color: "#1a365d"',
+        '  greeting: Create a payment link',
         '  mcp_token: nested-private-token',
       ].join('\n'),
     );
@@ -121,5 +124,8 @@ describe('GET /api/clients/:name/public', () => {
     });
     expect(JSON.stringify(response.body)).not.toContain('private-');
     expect(response.body.brand).toEqual({ display_name: 'Public Brand' });
+    expect(response.body.brand).not.toHaveProperty('tone');
+    expect(response.body.brand).not.toHaveProperty('primary_color');
+    expect(response.body.brand).not.toHaveProperty('greeting');
   });
 });

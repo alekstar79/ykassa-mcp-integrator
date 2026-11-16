@@ -6,6 +6,7 @@ import * as yaml from 'js-yaml';
 import {
   ClientConfigSchema,
   CLIENT_CONFIG_DEFAULTS,
+  DEFAULTS_BLOCK_FALLBACK,
   type ClientConfig,
 } from '@alekstar79/ykassa-contracts';
 import { HttpError, isRecord } from './http.js';
@@ -13,6 +14,7 @@ import { HttpError, isRecord } from './http.js';
 export type {
   ClientAccent,
   ClientConfig,
+  ClientDefaults,
   ClientFontPair,
   ClientFormStyle,
   ClientH1Size,
@@ -96,7 +98,10 @@ export function parseClientConfig(
     );
   }
 
-  const parsed = ClientConfigSchema.safeParse(rawConfig);
+  const configToParse = Object.hasOwn(rawConfig, 'defaults')
+    ? rawConfig
+    : { ...rawConfig, defaults: DEFAULTS_BLOCK_FALLBACK };
+  const parsed = ClientConfigSchema.safeParse(configToParse);
   if (!parsed.success) {
     const [issue] = parsed.error.issues;
     const section = issue?.path[0];

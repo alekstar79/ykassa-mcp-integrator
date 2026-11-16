@@ -1,5 +1,24 @@
+export function isToolAvailable(
+  toolName: string,
+  allowedScenarios: ReadonlySet<string>,
+  vatCode: number | undefined,
+): boolean {
+  return (
+    allowedScenarios.has(toolName) &&
+    (toolName !== 'create_invoice' || vatCode !== undefined)
+  );
+}
+
 export const ALLOWED_FIELDS: Record<string, Set<string>> = {
-  create_payment: new Set(['amount', 'description']),
+  create_payment: new Set(['amount', 'capture', 'description']),
+  create_invoice: new Set([
+    'amount',
+    'cart',
+    'description',
+    'expires_at',
+    'gateway_id',
+    'total_amount',
+  ]),
   get_payment: new Set(['id']),
   get_payments: new Set([
     'created_at_gte',
@@ -7,6 +26,7 @@ export const ALLOWED_FIELDS: Record<string, Set<string>> = {
     'limit',
     'next_cursor',
     'payment_method',
+    'period',
     'status',
   ]),
   get_invoice: new Set(['id']),
@@ -16,6 +36,7 @@ export const ALLOWED_FIELDS: Record<string, Set<string>> = {
     'limit',
     'next_cursor',
     'payment_id',
+    'period',
     'status',
   ]),
   get_refund: new Set(['id']),
