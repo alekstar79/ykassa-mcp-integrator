@@ -28,7 +28,6 @@ require_human_confirmation: true
 # Branding for the agent.
 brand:
   display_name: "Online English School"
-  tone: "friendly-professional"
 
 # Reference client metadata (demo materials only).
 demo_metrics:

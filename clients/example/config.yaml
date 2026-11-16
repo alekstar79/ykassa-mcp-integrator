@@ -30,6 +30,20 @@ limits:
   max_messages: 20
   max_attachment_kb: 100
 
+# Values applied when the request does not provide them.
+defaults:
+  # Default currency: RUB, USD, or EUR.
+  currency: RUB
+  # VAT code from the current YooKassa list (1 to 12). Code 11 is the
+  # standard 22% rate effective from 2026; choose a code for the transaction.
+  vat_code: 1
+  # Default capture behavior for payments.
+  capture: true
+  # Optional return URL. Leave empty when no return URL is configured.
+  return_url: ""
+  # Invoice lifetime in days, from 1 to 30.
+  invoice_expiry_days: 30
+
 # Optional non-secret brand information. display_name is shown in the UI.
 brand:
   display_name: "Example Client"
@@ -37,7 +51,7 @@ brand:
 # Reference UI configuration. Use "custom-ui" when the client supplies its
 # own interface; use "reference-ui" for the bundled reference interface.
 # accent: navy | terracotta | forest | graphite | cobalt | crimson
-# radius: 0 | 2 | 4 | 8
+# radius: 0–24
 # shadow: none | soft | medium
 # font_pair: manrope+jetbrains | inter+jetbrains
 # form_style: flat | card
