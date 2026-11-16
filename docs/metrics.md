@@ -1,27 +1,32 @@
 # Demo metrics
 
-## Before / after
+## Timings
 
-| Metric | Manual (estimate) | Agent / onboarding script | Configurator (estimate) | Delta / comment |
-|---|---:|---:|---:|---|
-| Create one payment link | ~45 s | 2.3 s | n/a | 42.7 s saved (~94.9%); manual time is an assumed average for the YooKassa dashboard, agent time is from the earlier single-request run. |
-| Create five payment links | ~4 min | 11.05 s | n/a | 3 min 48.95 s saved (~95.4%); manual estimate for five separate links, agent result is the earlier 5-row `gpt-4o` run. |
-| Onboard a client | ~3–5 min | ~10 s (`onboard-client.ts`) | ~1–2 min | Manual setup edits `config.yaml` and `.env`; the script creates and validates client files; the configurator flow is fill the form, download the zip, and copy it to `clients/<name>/`. |
+| Scenario                  | Manual estimate | Measured system or script time | Configurator estimate | Note                        |
+|---------------------------|----------------:|-------------------------------:|----------------------:|-----------------------------|
+| Create one payment link   |           ~45 s |                          2.3 s |                   n/a | One successful agent run    |
+| Create five payment links |          ~4 min |                        11.05 s |                   n/a | All five links were created |
+| Onboard a client          |        ~3–5 min |    ~10 s (`onboard-client.ts`) |              ~1–2 min | Script time is approximate  |
 
-## Measurement note
+## How we collected the results
 
-> Ручной замер — оценочный. Замер с агентом — фактический прогон gpt-4o, 2026-11-13.
+On November 13, 2026, we tested one 100 RUB payment link and a request for
+five links at 100 RUB each in the test shop. The `gpt-4o` run went through the
+reference UI, API, LLM, YooKassa MCP, and back to the UI. The five-link
+request created all five links.
 
-The payment-link timings are single-run observations, not medians or a
-controlled benchmark. The five-link run used a test shop and requested
-100 RUB per row. It returned 5 of 5 links in 11.05 seconds; the resulting
-payments remained pending and none was completed.
+That run used the pipeline as it existed on November 13, before
+`enrichToolCall` and Ajv JSON Schema validation were added.
 
-The manual figures are estimates, not timed dashboard trials. The onboarding
-script and configurator are two different automation paths: `onboard-client.ts`
-is for operators already in a terminal, while the configurator is for service
-owners using a web UI. Both reduce manual setup from about 3–5 minutes to
-10–120 seconds. The script's ~10 s is an approximate run, and the
-configurator's ~1–2 min is an estimate, not a timed result. The API reads
-client configuration per request, so restarting the API is not required by
-the current implementation.
+On November 17, a new run with the local `qwen2.5:7b-instruct` model reached
+YooKassa MCP, but the store rejected the RUB currency. No link was created,
+so that failed run is not included in the timing table.
+
+The manual times are estimates, not stopwatch results. They describe creating
+links in the YooKassa dashboard. The Configurator estimate includes filling
+in the form, downloading the archive, and copying it to `clients/<name>/`.
+The `onboard-client.ts` time is an approximate script run.
+
+The script is for operators who use a terminal. The Configurator is for
+service owners who prefer a web interface. The API reads client settings for
+each request, so adding a client does not require an API restart.

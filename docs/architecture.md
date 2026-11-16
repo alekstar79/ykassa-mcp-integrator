@@ -17,17 +17,30 @@ secrets, requests the current MCP tool list, and sends eligible tools and the
 manager request to the configured LLM provider. The API validates proposed
 tool calls before executing them and records MCP results in the audit log.
 
-## Два представления архитектуры
+## Enrichment layer
 
-Этот документ — текстовое описание: компоненты, контракты, потоки данных. Рядом есть интерактивная карта: [https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html).
+The LLM parses the manager's intent and proposes tool arguments. Before a call
+is sent to MCP, `enrich.ts` fills missing values from the client's `defaults`,
+then applies validated per-request `overrides`; overrides take precedence for
+that request only. `validateToolCall.ts` checks the resulting arguments
+against the tool's JSON Schema returned by `tools/list`. Invalid arguments are
+rejected before the MCP call.
 
-Третье представление — короткая презентация для быстрого знакомства: [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html).
+The Reference UI stores payment settings locally and sends them as `overrides`
+with `/api/ask`. The Configurator does not edit payment defaults: generated
+client configuration uses `DEFAULTS_BLOCK_FALLBACK` from the shared contracts.
 
-Карта и текст дополняют друг друга:
-- **Текст** объясняет *почему* так (независимость слоёв, выбор Zod, причины отключения `create_invoice`).
-- **Карта** показывает *как* устроено: клик по узлу открывает Semantic passport с назначением компонента, его входящими и исходящими связями, потоками данных.
+## Two Representations of the Architecture
 
-Если вы читаете документ впервые, начните с карты — она даёт общую картину за 30 секунд. Текст ниже — для деталей.
+This document provides a text-based description, covering components, contracts, and data flows. Additionally, there is an interactive map available here: [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html).
+
+A third representation—a short presentation for a quick overview—can be found here: [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html).
+
+The map and the text complement each other:
+- The **text** explains the *why* behind certain decisions (e.g., layer independence, the choice of Zod, and the conditional availability of `create_invoice`).
+- The **map** illustrates the *how*—clicking on a node opens a "Semantic passport" that details the component’s purpose, its incoming and outgoing connections, and its data flows.
+
+If you are reading this document for the first time, start with the map; it provides a high-level overview in just 30 seconds.
 
 ## Application boundaries
 
@@ -49,9 +62,9 @@ format, not by application-level imports between the API and the UIs.
 
 The API uses the YooKassa MCP server as its only payment integration point.
 It calls `tools/list` at runtime; the server's current response is the source
-of truth for available tools. Client `allowed_scenarios` further narrows the
-tools offered to the LLM. The API also excludes `create_invoice` from the
-model tool list until the nested `cart` input receives strict validation.
+of truth for available tools. Client `allowed_scenarios` further narrows the tools offered to the
+LLM. `create_invoice` is offered only when it is allowed by the client and
+`defaults.vat_code` is set.
 
 ## LLM providers
 

@@ -65,23 +65,29 @@ file.
 
 Client settings are stored in `clients/<name>/config.yaml`. Available
 scenarios are constrained by the configuration, the live MCP tool list, and
-the API policy. `create_invoice` is currently not passed to the model.
+the API policy. `create_invoice` is passed to the model when it is listed in
+`allowed_scenarios` and `defaults.vat_code` is configured.
 
-| Field                        | Type                                                                      | Default               | Description                                                            |
-|------------------------------|---------------------------------------------------------------------------|-----------------------|------------------------------------------------------------------------|
-| `allowed_scenarios`          | `string[]`                                                                | All 7 known MCP tools | Scenarios allowed for the client                                       |
-| `approval_threshold`         | `number`                                                                  | `4000`                | Amount in RUB; `create_payment` above this threshold requires approval |
-| `require_human_confirmation` | `boolean`                                                                 | `false`               | `true` requires approval for every payment                             |
-| `limits.max_messages`        | `number` (1–100)                                                          | `20`                  | Maximum messages in one request                                        |
-| `limits.max_attachment_kb`   | `number` (1–1024)                                                         | `100`                 | Maximum attachment size                                                |
-| `brand.display_name`         | `string`                                                                  | Not set               | Service name shown in the UI                                           |
-| `ui.mode`                    | `reference-ui` \| `custom-ui`                                             | `reference-ui`        | Client interface mode                                                  |
-| `ui.accent`                  | `navy` \| `terracotta` \| `forest` \| `graphite` \| `cobalt` \| `crimson` | `navy`                | Button and accent color                                                |
-| `ui.radius`                  | `0` \| `2` \| `4` \| `8`                                                  | `2`                   | Element corner radius                                                  |
-| `ui.shadow`                  | `none` \| `soft` \| `medium`                                              | `soft`                | Shadow intensity                                                       |
-| `ui.font_pair`               | `manrope+jetbrains` \| `inter+jetbrains`                                  | `manrope+jetbrains`   | Font pair                                                              |
-| `ui.form_style`              | `flat` \| `card`                                                          | `flat`                | Form on the page or in a card                                          |
-| `ui.h1_size`                 | `s` \| `m` \| `l`                                                         | `m`                   | Main heading size                                                      |
+| Field                          | Type                                                                      | Default               | Description                                                                                                             |
+|--------------------------------|---------------------------------------------------------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `allowed_scenarios`            | `string[]`                                                                | All 7 known MCP tools | Scenarios allowed for the client                                                                                        |
+| `approval_threshold`           | `number`                                                                  | `4000`                | Amount in RUB; payments or invoices above it require approval                                                           |
+| `require_human_confirmation`   | `boolean`                                                                 | `false`               | `true` requires approval for every risky operation                                                                      |
+| `limits.max_messages`          | `number` (1–100)                                                          | `20`                  | Maximum messages in one request                                                                                         |
+| `limits.max_attachment_kb`     | `number` (1–1024)                                                         | `100`                 | Maximum attachment size                                                                                                 |
+| `defaults.currency`            | `RUB` \| `USD` \| `EUR`                                                   | `RUB`                 | Default currency                                                                                                        |
+| `defaults.vat_code`            | `1`–`12`                                                                  | `1`                   | Codes 1–12; the standard rate since 2026 is code 11 (22%). Codes 4/6 (20% and 20/120) remain for cases where applicable |
+| `defaults.capture`             | `boolean`                                                                 | `true`                | Default `capture` value                                                                                                 |
+| `defaults.return_url`          | `string` (URL), optional                                                  | Not set               | URL to return to after payment                                                                                          |
+| `defaults.invoice_expiry_days` | `number` (1–30)                                                           | `30`                  | Invoice expiry in days                                                                                                  |
+| `brand.display_name`           | `string`                                                                  | Not set               | Service name shown in the UI                                                                                            |
+| `ui.mode`                      | `reference-ui` \| `custom-ui`                                             | `reference-ui`        | Client interface mode                                                                                                   |
+| `ui.accent`                    | `navy` \| `terracotta` \| `forest` \| `graphite` \| `cobalt` \| `crimson` | `navy`                | Button and accent color                                                                                                 |
+| `ui.radius`                    | `0–24`                                                                    | `2`                   | Corner radius from 0 to 24 px                                                                                           |
+| `ui.shadow`                    | `none` \| `soft` \| `medium`                                              | `soft`                | Shadow intensity                                                                                                        |
+| `ui.font_pair`                 | `manrope+jetbrains` \| `inter+jetbrains`                                  | `manrope+jetbrains`   | Font pair                                                                                                               |
+| `ui.form_style`                | `flat` \| `card`                                                          | `flat`                | Form on the page or in a card                                                                                           |
+| `ui.h1_size`                   | `s` \| `m` \| `l`                                                         | `m`                   | Main heading size                                                                                                       |
 
 For `mode: custom-ui`, set only `ui.mode` in YAML. The custom interface uses
 the [HTTP contract](docs/api-contract.md).
@@ -130,17 +136,15 @@ availability through `tools/list` at runtime.
 | `create_payment` | Available                                           | Create a payment            |
 | `get_payment`    | Available                                           | Retrieve a payment          |
 | `get_payments`   | Available                                           | Retrieve a list of payments |
-| `create_invoice` | Available in MCP, excluded from the model tool list | Create an invoice           |
+| `create_invoice` | Available in MCP; passed to model by configuration  | Create an invoice           |
 | `get_invoice`    | Available                                           | Retrieve an invoice         |
 | `get_refund`     | Available                                           | Retrieve a refund           |
 | `get_refunds`    | Available                                           | Retrieve a list of refunds  |
 
-> **Why is `create_invoice` disabled?** The tool accepts a nested `cart`
-> containing products, prices, and quantities. Current LLMs do not reliably
-> construct this structure, and schema errors cause the call to be rejected.
-> The API excludes `create_invoice` from the model tool list even when it is
-> present in `allowed_scenarios`. Enabling it requires strict `cart` schema
-> validation before calling MCP and a corresponding API policy change.
+> `create_invoice` is included in the model tool list only when it is present
+> in `allowed_scenarios` and `defaults.vat_code` is set. Before calling MCP,
+> the API enriches the cart with configured defaults and validates arguments
+> against the tool schema.
 
 The official MCP does not provide `create_refund`; issue refunds through the
 YooKassa dashboard or API. `capture_payment` and recurring payment creation
@@ -183,40 +187,40 @@ restrict access to it.
 
 ## Screenshots
 
-`01-07`: reference UI (light and dark themes, mobile, English).
-`08-12`: client configurator (settings, preview, dark theme, mobile).
+`01-08`: Reference UI (themes, mobile screens, approval, result, and English locale).
+`09-14`: configurator settings and preview in light, dark, and mobile layouts.
 
 <details>
 <summary>Screenshots</summary>
 
 <table>
   <tr>
-    <td align="center"><a href="docs/screenshots/01-light-desktop.png"><img src="docs/screenshots/01-light-desktop.png" width="400" alt="Reference UI, light theme, desktop"></a><br><sub>01. Reference UI · light · desktop</sub></td>
-    <td align="center"><a href="docs/screenshots/02-dark-desktop.png"><img src="docs/screenshots/02-dark-desktop.png" width="400" alt="Reference UI, dark theme, desktop"></a><br><sub>02. Reference UI · dark · desktop</sub></td>
+    <td align="center"><a href="docs/screenshots/01-reference-light-desktop.png"><img src="docs/screenshots/01-reference-light-desktop.png" width="400" alt="Reference UI, light theme, desktop"></a><br><sub>01. Reference UI · light · desktop</sub></td>
+    <td align="center"><a href="docs/screenshots/02-reference-dark-desktop.png"><img src="docs/screenshots/02-reference-dark-desktop.png" width="400" alt="Reference UI, dark theme, desktop"></a><br><sub>02. Reference UI · dark · desktop</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/03-result-desktop.png"><img src="docs/screenshots/03-result-desktop.png" width="400" alt="Result and tool calls"></a><br><sub>03. Result and tool calls</sub></td>
-    <td align="center"><a href="docs/screenshots/04-approval-desktop.png"><img src="docs/screenshots/04-approval-desktop.png" width="400" alt="Approval card"></a><br><sub>04. Human-in-the-loop approval</sub></td>
+    <td align="center"><a href="docs/screenshots/03-reference-light-mobile.png"><img src="docs/screenshots/03-reference-light-mobile.png" width="400" alt="Reference UI, light theme, mobile"></a><br><sub>03. Reference UI · light · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/04-reference-dark-mobile.png"><img src="docs/screenshots/04-reference-dark-mobile.png" width="400" alt="Reference UI, dark theme, mobile"></a><br><sub>04. Reference UI · dark · mobile</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/05-light-mobile.png"><img src="docs/screenshots/05-light-mobile.png" width="400" alt="Mobile, light theme"></a><br><sub>05. Reference UI · light · mobile</sub></td>
-    <td align="center"><a href="docs/screenshots/06-dark-mobile.png"><img src="docs/screenshots/06-dark-mobile.png" width="400" alt="Mobile, dark theme"></a><br><sub>06. Reference UI · dark · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/05-reference-approval.png"><img src="docs/screenshots/05-reference-approval.png" width="400" alt="Human-in-the-loop approval"></a><br><sub>05. Reference UI · approval</sub></td>
+    <td align="center"><a href="docs/screenshots/06-reference-result.png"><img src="docs/screenshots/06-reference-result.png" width="400" alt="Reference UI result with tool call"></a><br><sub>06. Reference UI · result</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/07-locale-en.png"><img src="docs/screenshots/07-locale-en.png" width="400" alt="English locale"></a><br><sub>07. Reference UI · English locale</sub></td>
-    <td align="center"></td>
+    <td align="center"><a href="docs/screenshots/07-reference-settings.png"><img src="docs/screenshots/07-reference-settings.png" width="400" alt="Reference UI settings and VAT selector"></a><br><sub>07. Reference UI · settings</sub></td>
+    <td align="center"><a href="docs/screenshots/08-reference-en.png"><img src="docs/screenshots/08-reference-en.png" width="400" alt="Reference UI, English locale"></a><br><sub>08. Reference UI · English</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/08-configurator-settings-light-1280.png"><img src="docs/screenshots/08-configurator-settings-light-1280.png" width="400" alt="Configurator settings, light"></a><br><sub>08. Configurator · settings · light</sub></td>
-    <td align="center"><a href="docs/screenshots/09-configurator-preview-light-1280.png"><img src="docs/screenshots/09-configurator-preview-light-1280.png" width="400" alt="Configurator preview, light"></a><br><sub>09. Configurator · preview · light</sub></td>
+    <td align="center"><a href="docs/screenshots/09-configurator-settings-light.png"><img src="docs/screenshots/09-configurator-settings-light.png" width="400" alt="Configurator settings, light theme"></a><br><sub>09. Configurator · settings · light</sub></td>
+    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark.png"><img src="docs/screenshots/10-configurator-settings-dark.png" width="400" alt="Configurator settings, dark theme"></a><br><sub>10. Configurator · settings · dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark-1280.png"><img src="docs/screenshots/10-configurator-settings-dark-1280.png" width="400" alt="Configurator settings, dark"></a><br><sub>10. Configurator · settings · dark</sub></td>
-    <td align="center"><a href="docs/screenshots/11-configurator-preview-dark-1280.png"><img src="docs/screenshots/11-configurator-preview-dark-1280.png" width="400" alt="Configurator preview, dark"></a><br><sub>11. Configurator · preview · dark</sub></td>
+    <td align="center"><a href="docs/screenshots/11-configurator-preview-light.png"><img src="docs/screenshots/11-configurator-preview-light.png" width="400" alt="Configurator preview, light theme"></a><br><sub>11. Configurator · preview · light</sub></td>
+    <td align="center"><a href="docs/screenshots/12-configurator-preview-dark.png"><img src="docs/screenshots/12-configurator-preview-dark.png" width="400" alt="Configurator preview, dark theme"></a><br><sub>12. Configurator · preview · dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/12-configurator-mobile-375.png"><img src="docs/screenshots/12-configurator-mobile-375.png" width="400" alt="Configurator, mobile"></a><br><sub>12. Configurator · mobile</sub></td>
-    <td align="center"></td>
+    <td align="center"><a href="docs/screenshots/13-configurator-settings-mobile.png"><img src="docs/screenshots/13-configurator-settings-mobile.png" width="400" alt="Configurator settings, mobile"></a><br><sub>13. Configurator · settings · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/14-configurator-preview-mobile.png"><img src="docs/screenshots/14-configurator-preview-mobile.png" width="400" alt="Configurator preview, mobile"></a><br><sub>14. Configurator · preview · mobile</sub></td>
   </tr>
 </table>
 
@@ -228,8 +232,6 @@ restrict access to it.
   them before production deployment.
 - Pending approvals are stored in memory and are lost when the API restarts.
 - The official MCP does not create refunds.
-- `create_invoice` is not passed to the model until strict `cart` schema
-  validation and an API policy update are in place.
 
 ## Production checklist
 

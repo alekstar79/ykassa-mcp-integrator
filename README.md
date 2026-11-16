@@ -64,23 +64,29 @@ npm i @alekstar79/ykassa-api         # headless API
 
 Параметры клиента задаются в `clients/<name>/config.yaml`. Допустимые
 сценарии ограничиваются как конфигурацией, так и фактическим списком
-инструментов MCP и политикой API. `create_invoice` сейчас не передаётся модели.
+инструментов MCP и политикой API. `create_invoice` передаётся модели, если он
+указан в `allowed_scenarios` и настроен `defaults.vat_code`.
 
-| Поле                         | Тип                                                                       | Дефолт                           | Описание                                                           |
-|------------------------------|---------------------------------------------------------------------------|----------------------------------|--------------------------------------------------------------------|
-| `allowed_scenarios`          | `string[]`                                                                | Все 7 известных MCP-инструментов | Сценарии, разрешённые для клиента                                  |
-| `approval_threshold`         | `number`                                                                  | `4000`                           | Сумма в рублях; `create_payment` выше порога требует подтверждения |
-| `require_human_confirmation` | `boolean`                                                                 | `false`                          | `true` требует подтверждения любого платежа                        |
-| `limits.max_messages`        | `number` (1–100)                                                          | `20`                             | Максимум сообщений в одном запросе                                 |
-| `limits.max_attachment_kb`   | `number` (1–1024)                                                         | `100`                            | Максимальный размер вложения                                       |
-| `brand.display_name`         | `string`                                                                  | Не задан                         | Название сервиса в интерфейсе                                      |
-| `ui.mode`                    | `reference-ui` \| `custom-ui`                                             | `reference-ui`                   | Режим клиентского интерфейса                                       |
-| `ui.accent`                  | `navy` \| `terracotta` \| `forest` \| `graphite` \| `cobalt` \| `crimson` | `navy`                           | Цвет кнопок и акцентов                                             |
-| `ui.radius`                  | `0` \| `2` \| `4` \| `8`                                                  | `2`                              | Скругление элементов                                               |
-| `ui.shadow`                  | `none` \| `soft` \| `medium`                                              | `soft`                           | Интенсивность теней                                                |
-| `ui.font_pair`               | `manrope+jetbrains` \| `inter+jetbrains`                                  | `manrope+jetbrains`              | Шрифтовая пара                                                     |
-| `ui.form_style`              | `flat` \| `card`                                                          | `flat`                           | Форма на фоне или в карточке                                       |
-| `ui.h1_size`                 | `s` \| `m` \| `l`                                                         | `m`                              | Размер основного заголовка                                         |
+| Поле                           | Тип                                                                       | Дефолт                           | Описание                                                                                                      |
+|--------------------------------|---------------------------------------------------------------------------|----------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `allowed_scenarios`            | `string[]`                                                                | Все 7 известных MCP-инструментов | Сценарии, разрешённые для клиента                                                                             |
+| `approval_threshold`           | `number`                                                                  | `4000`                           | Сумма в рублях; платёж или счёт выше порога требуют подтверждения                                             |
+| `require_human_confirmation`   | `boolean`                                                                 | `false`                          | `true` требует подтверждения каждой рискованной операции                                                      |
+| `limits.max_messages`          | `number` (1–100)                                                          | `20`                             | Максимум сообщений в одном запросе                                                                            |
+| `limits.max_attachment_kb`     | `number` (1–1024)                                                         | `100`                            | Максимальный размер вложения                                                                                  |
+| `defaults.currency`            | `RUB` \| `USD` \| `EUR`                                                   | `RUB`                            | Валюта по умолчанию                                                                                           |
+| `defaults.vat_code`            | `1`–`12`                                                                  | `1`                              | Коды 1–12; базовая ставка с 2026 года: 11 (22%). Коды 4/6 (20% и 20/120) сохранены для случаев, где применимы |
+| `defaults.capture`             | `boolean`                                                                 | `true`                           | Значение `capture` по умолчанию                                                                               |
+| `defaults.return_url`          | `string` (URL), необязательно                                             | Не задан                         | URL возврата после оплаты                                                                                     |
+| `defaults.invoice_expiry_days` | `number` (1–30)                                                           | `30`                             | Срок действия счёта в днях                                                                                    |
+| `brand.display_name`           | `string`                                                                  | Не задан                         | Название сервиса в интерфейсе                                                                                 |
+| `ui.mode`                      | `reference-ui` \| `custom-ui`                                             | `reference-ui`                   | Режим клиентского интерфейса                                                                                  |
+| `ui.accent`                    | `navy` \| `terracotta` \| `forest` \| `graphite` \| `cobalt` \| `crimson` | `navy`                           | Цвет кнопок и акцентов                                                                                        |
+| `ui.radius`                    | `0–24`                                                                    | `2`                              | Радиус углов в диапазоне от 0 до 24 px                                                                        |
+| `ui.shadow`                    | `none` \| `soft` \| `medium`                                              | `soft`                           | Интенсивность теней                                                                                           |
+| `ui.font_pair`                 | `manrope+jetbrains` \| `inter+jetbrains`                                  | `manrope+jetbrains`              | Шрифтовая пара                                                                                                |
+| `ui.form_style`                | `flat` \| `card`                                                          | `flat`                           | Форма на фоне или в карточке                                                                                  |
+| `ui.h1_size`                   | `s` \| `m` \| `l`                                                         | `m`                              | Размер основного заголовка                                                                                    |
 
 Для `mode: custom-ui` указывай в YAML только `ui.mode`. Собственный интерфейс
 работает по [HTTP-контракту](docs/api-contract.md).
@@ -122,22 +128,20 @@ MCP; при каждом запросе API получает список инс
 Список ниже относится к официальному YooKassa MCP. API проверяет доступность
 инструментов через `tools/list` во время выполнения.
 
-| Инструмент       | Статус                                                 | Назначение                 |
-|------------------|--------------------------------------------------------|----------------------------|
-| `create_payment` | Доступен                                               | Создание платежа           |
-| `get_payment`    | Доступен                                               | Получение платежа          |
-| `get_payments`   | Доступен                                               | Получение списка платежей  |
-| `create_invoice` | Доступен в MCP, исключён из списка инструментов модели | Создание счёта             |
-| `get_invoice`    | Доступен                                               | Получение счёта            |
-| `get_refund`     | Доступен                                               | Получение возврата         |
-| `get_refunds`    | Доступен                                               | Получение списка возвратов |
+| Инструмент       | Статус                                            | Назначение                 |
+|------------------|---------------------------------------------------|----------------------------|
+| `create_payment` | Доступен                                          | Создание платежа           |
+| `get_payment`    | Доступен                                          | Получение платежа          |
+| `get_payments`   | Доступен                                          | Получение списка платежей  |
+| `create_invoice` | Доступен в MCP; передаётся модели по конфигурации | Создание счёта             |
+| `get_invoice`    | Доступен                                          | Получение счёта            |
+| `get_refund`     | Доступен                                          | Получение возврата         |
+| `get_refunds`    | Доступен                                          | Получение списка возвратов |
 
-> **Почему `create_invoice` отключён.** Инструмент принимает вложенный `cart`
-> с товарами, ценой и количеством. Текущие LLM не формируют эту структуру
-> надёжно, а ошибки схемы приводят к отклонению вызова. API исключает
-> `create_invoice` из списка инструментов модели, даже если он присутствует
-> в `allowed_scenarios`. Для его включения потребуется строгая проверка схемы
-> `cart` до вызова MCP и соответствующее изменение политики API.
+> `create_invoice` попадает в список инструментов модели, только если он есть
+> в `allowed_scenarios` и задан `defaults.vat_code`. Перед вызовом MCP API
+> обогащает корзину значениями по умолчанию и проверяет аргументы по схеме
+> инструмента.
 
 Официальный MCP не предоставляет `create_refund`; возврат оформляется в
 личном кабинете ЮKassa или через API. `capture_payment` и создание
@@ -178,40 +182,40 @@ OpenAI-совместимого proxy описана в [CONTRIBUTING.md](CONTRI
 
 ## Скриншоты
 
-`01-07`: reference UI (светлая и тёмная темы, мобильный экран, английский язык).
-`08-12`: конфигуратор (настройки, предпросмотр, тёмная тема, мобильный экран).
+`01-08`: Reference UI (темы, мобильные экраны, подтверждение, результат и английский язык).
+`09-14`: конфигуратор (настройки и предпросмотр в светлой, тёмной и мобильной версиях).
 
 <details>
 <summary>Скриншоты</summary>
 
 <table>
   <tr>
-    <td align="center"><a href="docs/screenshots/01-light-desktop.png"><img src="docs/screenshots/01-light-desktop.png" width="400" alt="Reference UI, light theme, desktop"></a><br><sub>01. Reference UI · light · desktop</sub></td>
-    <td align="center"><a href="docs/screenshots/02-dark-desktop.png"><img src="docs/screenshots/02-dark-desktop.png" width="400" alt="Reference UI, dark theme, desktop"></a><br><sub>02. Reference UI · dark · desktop</sub></td>
+    <td align="center"><a href="docs/screenshots/01-reference-light-desktop.png"><img src="docs/screenshots/01-reference-light-desktop.png" width="400" alt="Reference UI, light theme, desktop"></a><br><sub>01. Reference UI · light · desktop</sub></td>
+    <td align="center"><a href="docs/screenshots/02-reference-dark-desktop.png"><img src="docs/screenshots/02-reference-dark-desktop.png" width="400" alt="Reference UI, dark theme, desktop"></a><br><sub>02. Reference UI · dark · desktop</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/03-result-desktop.png"><img src="docs/screenshots/03-result-desktop.png" width="400" alt="Result and tool calls"></a><br><sub>03. Result and tool calls</sub></td>
-    <td align="center"><a href="docs/screenshots/04-approval-desktop.png"><img src="docs/screenshots/04-approval-desktop.png" width="400" alt="Approval card"></a><br><sub>04. Human-in-the-loop approval</sub></td>
+    <td align="center"><a href="docs/screenshots/03-reference-light-mobile.png"><img src="docs/screenshots/03-reference-light-mobile.png" width="400" alt="Reference UI, light theme, mobile"></a><br><sub>03. Reference UI · light · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/04-reference-dark-mobile.png"><img src="docs/screenshots/04-reference-dark-mobile.png" width="400" alt="Reference UI, dark theme, mobile"></a><br><sub>04. Reference UI · dark · mobile</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/05-light-mobile.png"><img src="docs/screenshots/05-light-mobile.png" width="400" alt="Mobile, light theme"></a><br><sub>05. Reference UI · light · mobile</sub></td>
-    <td align="center"><a href="docs/screenshots/06-dark-mobile.png"><img src="docs/screenshots/06-dark-mobile.png" width="400" alt="Mobile, dark theme"></a><br><sub>06. Reference UI · dark · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/05-reference-approval.png"><img src="docs/screenshots/05-reference-approval.png" width="400" alt="Human-in-the-loop approval"></a><br><sub>05. Reference UI · approval</sub></td>
+    <td align="center"><a href="docs/screenshots/06-reference-result.png"><img src="docs/screenshots/06-reference-result.png" width="400" alt="Reference UI result with tool call"></a><br><sub>06. Reference UI · result</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/07-locale-en.png"><img src="docs/screenshots/07-locale-en.png" width="400" alt="English locale"></a><br><sub>07. Reference UI · English locale</sub></td>
-    <td align="center"></td>
+    <td align="center"><a href="docs/screenshots/07-reference-settings.png"><img src="docs/screenshots/07-reference-settings.png" width="400" alt="Reference UI settings and VAT selector"></a><br><sub>07. Reference UI · settings</sub></td>
+    <td align="center"><a href="docs/screenshots/08-reference-en.png"><img src="docs/screenshots/08-reference-en.png" width="400" alt="Reference UI, English locale"></a><br><sub>08. Reference UI · English</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/08-configurator-settings-light-1280.png"><img src="docs/screenshots/08-configurator-settings-light-1280.png" width="400" alt="Configurator settings, light"></a><br><sub>08. Configurator · settings · light</sub></td>
-    <td align="center"><a href="docs/screenshots/09-configurator-preview-light-1280.png"><img src="docs/screenshots/09-configurator-preview-light-1280.png" width="400" alt="Configurator preview, light"></a><br><sub>09. Configurator · preview · light</sub></td>
+    <td align="center"><a href="docs/screenshots/09-configurator-settings-light.png"><img src="docs/screenshots/09-configurator-settings-light.png" width="400" alt="Configurator settings, light theme"></a><br><sub>09. Configurator · settings · light</sub></td>
+    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark.png"><img src="docs/screenshots/10-configurator-settings-dark.png" width="400" alt="Configurator settings, dark theme"></a><br><sub>10. Configurator · settings · dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/10-configurator-settings-dark-1280.png"><img src="docs/screenshots/10-configurator-settings-dark-1280.png" width="400" alt="Configurator settings, dark"></a><br><sub>10. Configurator · settings · dark</sub></td>
-    <td align="center"><a href="docs/screenshots/11-configurator-preview-dark-1280.png"><img src="docs/screenshots/11-configurator-preview-dark-1280.png" width="400" alt="Configurator preview, dark"></a><br><sub>11. Configurator · preview · dark</sub></td>
+    <td align="center"><a href="docs/screenshots/11-configurator-preview-light.png"><img src="docs/screenshots/11-configurator-preview-light.png" width="400" alt="Configurator preview, light theme"></a><br><sub>11. Configurator · preview · light</sub></td>
+    <td align="center"><a href="docs/screenshots/12-configurator-preview-dark.png"><img src="docs/screenshots/12-configurator-preview-dark.png" width="400" alt="Configurator preview, dark theme"></a><br><sub>12. Configurator · preview · dark</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/screenshots/12-configurator-mobile-375.png"><img src="docs/screenshots/12-configurator-mobile-375.png" width="400" alt="Configurator, mobile"></a><br><sub>12. Configurator · mobile</sub></td>
-    <td align="center"></td>
+    <td align="center"><a href="docs/screenshots/13-configurator-settings-mobile.png"><img src="docs/screenshots/13-configurator-settings-mobile.png" width="400" alt="Configurator settings, mobile"></a><br><sub>13. Configurator · settings · mobile</sub></td>
+    <td align="center"><a href="docs/screenshots/14-configurator-preview-mobile.png"><img src="docs/screenshots/14-configurator-preview-mobile.png" width="400" alt="Configurator preview, mobile"></a><br><sub>14. Configurator · preview · mobile</sub></td>
   </tr>
 </table>
 
@@ -223,8 +227,6 @@ OpenAI-совместимого proxy описана в [CONTRIBUTING.md](CONTRI
   production-развёртыванием.
 - Ожидающие подтверждения хранятся в памяти и теряются при перезапуске API.
 - Официальный MCP не создаёт возвраты.
-- `create_invoice` не передаётся модели до добавления строгой проверки схемы
-  `cart` и обновления политики API.
 
 ## Production checklist
 

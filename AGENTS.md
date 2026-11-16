@@ -27,14 +27,14 @@ Five workspaces:
 
 ## Testing
 
-- `npm test` runs all workspaces. Currently 103 tests: 58 API, 31 configurator, 11 web, 2 contracts, 1 lib.
+- `npm test` runs all workspaces. Use `npm run test:coverage` for per-workspace coverage.
 - Vitest. Vue tests use `@vue/test-utils` + `jsdom`.
 - Tests live in `tests/**/*.test.ts` per workspace. Do not move them into `src/`.
 
 ## Do not
 
 - Do not publish to npm, push to git, or create commits — release is manual.
-- Do not touch `docs/screenshots/01-*.png` … `docs/screenshots/12-*.png`.
+- Do not alter `docs/screenshots/` unless the current task explicitly requests screenshot changes.
 - Do not delete or rewrite existing tests to make a change pass.
 - Do not silence TypeScript errors by adding `any`, `@ts-ignore`, `@ts-expect-error`.
 
@@ -52,3 +52,8 @@ Five workspaces:
 - `docs/architecture.md` — how the pieces fit together.
 - `docs/api-contract.md` — HTTP contract for custom UI authors.
 - `docs/copilot-proxy.md` — optional local LLM proxy (development only).
+
+Before adding a new field to `config.yaml` or a new setting to the UI, read
+`docs/decisions.md`. If a feature was cancelled, do not reintroduce it without
+discussion. When adding a replacement, remove its obsolete related fields
+instead of keeping them "just in case".

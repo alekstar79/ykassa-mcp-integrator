@@ -18,6 +18,12 @@ Preferred form:
   "messages": [
     { "role": "user", "content": "Create a payment link for 100 RUB" }
   ],
+  "overrides": {
+    "currency": "RUB",
+    "vat_code": 11,
+    "capture": true,
+    "invoice_expiry_days": 30
+  },
   "attachment": {
     "filename": "customers.txt",
     "content": "Anna\nBoris"
@@ -29,6 +35,11 @@ Preferred form:
 `limits.max_attachment_kb`; the filename may contain at most 255 characters.
 The messages array is limited by `limits.max_messages`. Each message currently
 requires `role: "user"` and a string `content` of at most 8,000 characters.
+`overrides` is optional and contains payment settings selected by the operator
+in the Reference UI. Supported fields are `currency`, `vat_code`, `capture`,
+`return_url`, and `invoice_expiry_days`. Supplied values take precedence over
+the corresponding client defaults for that request only; they are validated
+by the API and are not written back to `config.yaml`.
 
 For backwards compatibility, callers may instead send `client`, `amount`, and
 `description`:
@@ -136,10 +147,7 @@ when omitted.
 ```json
 {
   "brand": {
-    "display_name": "Online School",
-    "tone": "professional",
-    "primary_color": "#1a365d",
-    "greeting": "Create a payment link"
+    "display_name": "Online School"
   },
   "allowed_scenarios": ["create_payment"],
   "approval_threshold": 4000,
