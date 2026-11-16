@@ -19,6 +19,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 describe('useClientApi', () => {
   beforeEach(() => {
     fetchMock.mockReset();
+    window.localStorage.clear();
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -118,6 +119,32 @@ describe('useClientApi', () => {
     expect(api.apiWarning.value).toBe('');
     expect(api.toolCalls.value).toEqual([]);
     expect(api.pendingApproval.value).toBeNull();
+  });
+
+  it('sends saved client-default overrides with the request', async () => {
+    window.localStorage.setItem(
+      'ykassa_ui_defaults',
+      JSON.stringify({
+        currency: 'USD',
+        vat_code: 3,
+        capture: false,
+        return_url: 'https://example.test/return',
+        invoice_expiry_days: 12,
+      }),
+    );
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    const api = useClientApi(ref('online-school'));
+
+    await api.sendRequest(payload);
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.overrides).toEqual({
+      currency: 'USD',
+      vat_code: 3,
+      capture: false,
+      return_url: 'https://example.test/return',
+      invoice_expiry_days: 12,
+    });
   });
 
   it('uses the current locale for fallback responses', async () => {

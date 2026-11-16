@@ -1,3 +1,5 @@
+import type { ClientDefaults } from '@alekstar79/ykassa-contracts';
+
 export interface ProposedActionItem {
   tool: string;
   args: Record<string, unknown>;
@@ -39,4 +41,8 @@ export interface Attachment {
 export interface RequestPayload {
   message: string;
   attachment: Attachment | null;
+}
+
+export interface UiDefaults extends ClientDefaults {
+  return_url: string;
 }

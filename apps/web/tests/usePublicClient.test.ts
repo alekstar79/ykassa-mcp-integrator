@@ -42,7 +42,7 @@ describe('usePublicClient', () => {
     window.history.replaceState({}, '', '/?client=test-school');
     fetchMock.mockResolvedValue(
       jsonResponse({
-        brand: { display_name: 'Test School', primary_color: '#123456' },
+        brand: { display_name: 'Test School' },
         allowed_scenarios: ['create_payment'],
         approval_threshold: 1000,
       }),
@@ -91,7 +91,7 @@ describe('usePublicClient', () => {
     window.history.replaceState({}, '', '/?client=%20%20');
     fetchMock.mockResolvedValue(
       jsonResponse({
-        brand: { display_name: 'Light School', primary_color: '#ffffff' },
+        brand: { display_name: 'Light School' },
         allowed_scenarios: ['create_payment'],
         approval_threshold: 1000,
       }),

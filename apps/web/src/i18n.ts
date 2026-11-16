@@ -2,7 +2,6 @@ export type Locale = 'ru' | 'en';
 
 export interface Messages {
   documentTitle: string;
-  brandFallback: string;
   title: string;
   languageSwitcher: string;
   switchToLight: string;
@@ -13,10 +12,34 @@ export interface Messages {
   resultsSection: string;
   requestLabel: string;
   requestPlaceholder: string;
-  attachmentLabel: string;
-  attachmentHint: string;
-  chooseFile: string;
   removeFile: string;
+  addActions: string;
+  uploadAttachment: string;
+  settings: string;
+  settingsTitle: string;
+  currency: string;
+  vatCode: string;
+  vatNoVat: string;
+  vatZero: string;
+  vatTen: string;
+  vatTwenty: string;
+  vatFive: string;
+  vatSeven: string;
+  vatTwentyTwo: string;
+  vatTenCalculated: string;
+  vatTwentyCalculated: string;
+  vatFiveCalculated: string;
+  vatSevenCalculated: string;
+  vatTwentyTwoCalculated: string;
+  capture: string;
+  returnUrl: string;
+  returnUrlHint: string;
+  invoiceExpiryDays: string;
+  saveSettings: string;
+  cancel: string;
+  invalidReturnUrl: string;
+  invalidInvoiceExpiry: string;
+  settingsSaveError: string;
   bytes: string;
   fileTooLarge: string;
   fileReadError: string;
@@ -51,7 +74,6 @@ export interface Messages {
 export const translations: Record<Locale, Messages> = {
   ru: {
     documentTitle: 'YooKassa · Менеджер платежей',
-    brandFallback: 'ОНЛАЙН-ШКОЛА',
     title: 'Менеджер платежей',
     languageSwitcher: 'Выбрать язык',
     switchToLight: 'Включить светлую тему',
@@ -61,12 +83,35 @@ export const translations: Record<Locale, Messages> = {
     requestSection: 'Форма запроса',
     resultsSection: 'Результаты работы',
     requestLabel: 'Что нужно сделать',
-    requestPlaceholder:
-      'Например: создай платёжную ссылку на 5 000 ₽ за курс английского',
-    attachmentLabel: 'Приложить файл',
-    attachmentHint: 'Список в формате CSV или TXT, до {limit} КБ',
-    chooseFile: 'Выбрать',
+    requestPlaceholder: 'Например: выставь счёт на 5 000 ₽ за курс английского',
     removeFile: 'Удалить файл',
+    addActions: 'Дополнительные действия',
+    uploadAttachment: 'Загрузить вложение',
+    settings: 'Настройки',
+    settingsTitle: 'Настройки',
+    currency: 'Валюта',
+    vatCode: 'Код НДС',
+    vatNoVat: 'без НДС',
+    vatZero: '0%',
+    vatTen: '10%',
+    vatTwenty: '20%',
+    vatFive: '5%',
+    vatSeven: '7%',
+    vatTwentyTwo: '22%',
+    vatTenCalculated: 'расчётная ставка 10/110',
+    vatTwentyCalculated: 'расчётная ставка 20/120',
+    vatFiveCalculated: 'расчётная ставка 5/105',
+    vatSevenCalculated: 'расчётная ставка 7/107',
+    vatTwentyTwoCalculated: 'расчётная ставка 22/122',
+    capture: 'Списывать платёж сразу (capture)',
+    returnUrl: 'URL возврата',
+    returnUrlHint: 'Если пусто, клиент останется на странице оплаты.',
+    invoiceExpiryDays: 'Срок действия счёта (дней)',
+    saveSettings: 'Сохранить',
+    cancel: 'Отмена',
+    invalidReturnUrl: 'URL должен начинаться с http:// или https://.',
+    invalidInvoiceExpiry: 'Укажите целое число от 1 до 30.',
+    settingsSaveError: 'Не удалось сохранить настройки в этом браузере.',
     bytes: 'байт',
     fileTooLarge: 'Размер файла не должен превышать {limit} КБ.',
     fileReadError: 'Не удалось прочитать файл.',
@@ -99,7 +144,6 @@ export const translations: Record<Locale, Messages> = {
   },
   en: {
     documentTitle: 'YooKassa · Payment manager',
-    brandFallback: 'ONLINE SCHOOL',
     title: 'Payment manager',
     languageSwitcher: 'Choose language',
     switchToLight: 'Switch to light theme',
@@ -109,12 +153,35 @@ export const translations: Record<Locale, Messages> = {
     requestSection: 'Request form',
     resultsSection: 'Results',
     requestLabel: 'What should be done?',
-    requestPlaceholder:
-      'For example: create a ₽5,000 payment link for an English course',
-    attachmentLabel: 'Attach a file',
-    attachmentHint: 'CSV or TXT list, up to {limit} KB',
-    chooseFile: 'Choose file',
+    requestPlaceholder: 'For example: create an invoice for 5,000 RUB for an English course',
     removeFile: 'Remove file',
+    addActions: 'Additional actions',
+    uploadAttachment: 'Upload attachment',
+    settings: 'Settings',
+    settingsTitle: 'Settings',
+    currency: 'Currency',
+    vatCode: 'VAT code',
+    vatNoVat: 'no VAT',
+    vatZero: '0%',
+    vatTen: '10%',
+    vatTwenty: '20%',
+    vatFive: '5%',
+    vatSeven: '7%',
+    vatTwentyTwo: '22%',
+    vatTenCalculated: 'calculated rate 10/110',
+    vatTwentyCalculated: 'calculated rate 20/120',
+    vatFiveCalculated: 'calculated rate 5/105',
+    vatSevenCalculated: 'calculated rate 7/107',
+    vatTwentyTwoCalculated: 'calculated rate 22/122',
+    capture: 'Capture payment immediately',
+    returnUrl: 'Return URL',
+    returnUrlHint: 'If empty, the customer stays on the payment page.',
+    invoiceExpiryDays: 'Invoice expiry (days)',
+    saveSettings: 'Save',
+    cancel: 'Cancel',
+    invalidReturnUrl: 'The URL must start with http:// or https://.',
+    invalidInvoiceExpiry: 'Enter an integer from 1 to 30.',
+    settingsSaveError: 'Could not save settings in this browser.',
     bytes: 'bytes',
     fileTooLarge: 'The file must not exceed {limit} KB.',
     fileReadError: 'Could not read the file.',

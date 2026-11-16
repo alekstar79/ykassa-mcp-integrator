@@ -1,5 +1,6 @@
 import { computed, ref, type Ref } from 'vue';
 import { API_URL } from '../environment';
+import { readUiOverrides } from './uiDefaults.js';
 import { translate, type Locale, type MessageKey } from '../i18n';
 import type {
   ApiResponse,
@@ -96,6 +97,7 @@ export function useClientApi(
   async function submitRequest(payload: RequestPayload): Promise<void> {
     clearError();
     isBusy.value = true;
+    const overrides = readUiOverrides();
 
     try {
       const response = await fetch(`${API_URL}/api/ask`, {
@@ -104,6 +106,7 @@ export function useClientApi(
         body: JSON.stringify({
           client: clientName.value,
           messages: [{ role: 'user', content: payload.message }],
+          ...(overrides ? { overrides } : {}),
           ...(payload.attachment
             ? {
                 attachment: {

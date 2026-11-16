@@ -105,7 +105,7 @@ function setLocale(value: Locale): void {
   <main class="page" :style="clientStyle">
     <div class="page-shell">
       <ClientHeader
-        :brand-name="publicClient?.brand?.display_name || messages.brandFallback"
+        :brand-name="publicClient?.brand?.display_name ?? ''"
         :theme="theme"
         :locale="locale"
         :messages="messages"
@@ -128,10 +128,7 @@ function setLocale(value: Locale): void {
               publicClient?.limits?.max_attachment_kb ??
               CLIENT_CONFIG_DEFAULTS.limits.max_attachment_kb
             "
-            :form-style="
-              publicClient?.ui?.form_style ??
-              CLIENT_CONFIG_DEFAULTS.ui.form_style
-            "
+            :form-style="publicClient?.ui.form_style ?? 'flat'"
             :error-message="errorMessage"
             :busy="isBusy"
             :approval-pending="pendingApproval !== null"

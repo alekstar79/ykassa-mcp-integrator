@@ -17,7 +17,7 @@ const emit = defineEmits<{
 <template>
   <header class="header">
     <div class="header-copy">
-      <p class="eyebrow">{{ brandName }}</p>
+      <p v-if="brandName.trim()" class="eyebrow">{{ brandName }}</p>
       <h1>{{ messages.title }}</h1>
     </div>
     <div class="header-controls">
