@@ -42,19 +42,14 @@ defineProps<{
           v-for="scenario in KNOWN_MCP_SCENARIOS"
           :key="scenario"
           class="scenario-option"
-          :class="{ 'is-disabled': scenario === 'create_invoice' }"
         >
           <input
             type="checkbox"
             :value="scenario"
             :checked="form.allowed_scenarios.includes(scenario)"
-            :disabled="scenario === 'create_invoice'"
             @change="toggleScenario(scenario, $event)"
           />
           <span>{{ scenario }}</span>
-          <small v-if="scenario === 'create_invoice'" class="scenario-note">
-            {{ messages.createInvoiceDemoDisabled }}
-          </small>
         </label>
       </div>
       <p

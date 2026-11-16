@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { dump } from 'js-yaml';
 import {
   ClientConfigSchema,
+  DEFAULTS_BLOCK_FALLBACK,
   type ClientLimits,
   type ClientUiConfig,
 } from '@alekstar79/ykassa-contracts';
@@ -94,6 +95,7 @@ export async function buildClientZip(
     approval_threshold: form.approval_threshold,
     require_human_confirmation: form.require_human_confirmation,
     limits: form.limits,
+    defaults: DEFAULTS_BLOCK_FALLBACK,
     ui: form.ui,
     ...(form.ui.mode === 'reference-ui' && Object.keys(brand).length > 0
       ? { brand }
@@ -127,6 +129,7 @@ export async function buildClientZip(
       max_messages: parsed.data.limits.max_messages,
       max_attachment_kb: parsed.data.limits.max_attachment_kb,
     },
+    defaults: { ...DEFAULTS_BLOCK_FALLBACK },
     ui,
     ...(parsed.data.ui.mode === 'reference-ui' && Object.keys(brand).length > 0
       ? { brand }

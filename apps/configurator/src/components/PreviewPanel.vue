@@ -8,7 +8,6 @@ type Theme = 'light' | 'dark';
 
 interface Props {
   displayName?: string;
-  maxAttachmentKb: number;
   ui: ClientUiConfig;
   locale: Locale;
   theme: Theme;
@@ -28,12 +27,6 @@ const props = withDefaults(defineProps<Props>(), {
   displayName: '',
 });
 const messages = computed(() => translations[props.locale]);
-const attachmentHint = computed(() =>
-  messages.value.attachmentHint.replace(
-    '{limit}',
-    String(props.maxAttachmentKb),
-  ),
-);
 
 const previewStyle = computed<PreviewStyle>(() => {
   const accent = ACCENT_PALETTE[props.ui.accent][props.theme];
@@ -86,47 +79,48 @@ const previewStyle = computed<PreviewStyle>(() => {
       </div>
     </header>
 
-    <div
-      class="request-form"
-      :class="{ 'form--card': ui.form_style === 'card' }"
-    >
-      <label class="field-label" for="preview-request">
-        {{ messages.requestLabel }}
-      </label>
-      <textarea
-        id="preview-request"
-        class="preview-request"
-        rows="4"
-        :placeholder="messages.requestPlaceholder"
-        readonly
-        tabindex="-1"
-      />
+    <div class="request-form">
+      <div
+        class="chat-input-container"
+        :class="{
+          'chat-input-container--flat': ui.form_style === 'flat',
+          'chat-input-container--card': ui.form_style === 'card',
+        }"
+      >
+        <textarea
+          id="preview-request"
+          class="chat-textarea"
+          rows="1"
+          :aria-label="messages.requestLabel"
+          :placeholder="messages.requestPlaceholder"
+          readonly
+          tabindex="-1"
+        />
 
-      <div class="file-drop-zone">
-        <svg
-          class="file-icon"
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <path
-            d="m8.5 12.5 6.8-6.8a3.1 3.1 0 0 1 4.4 4.4l-9.2 9.2a5 5 0 0 1-7.1-7.1l9.2-9.2"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.6"
-          />
-        </svg>
-        <span class="file-copy">
-          <strong>{{ messages.attachmentLabel }}</strong>
-          <small>{{ attachmentHint }}</small>
-        </span>
-        <span class="file-action">{{ messages.chooseFile }}</span>
+        <div class="chat-actions">
+          <span class="add-menu-button" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 5v14M5 12h14"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="2"
+              />
+            </svg>
+          </span>
+          <span class="chat-send-button" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 19V5m0 0L6 11m6-6 6 6"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              />
+            </svg>
+          </span>
+        </div>
       </div>
-
-      <button class="primary-button" type="button" disabled>
-        {{ messages.send }}
-      </button>
     </div>
 
     <footer class="preview-footer">
@@ -185,106 +179,83 @@ const previewStyle = computed<PreviewStyle>(() => {
 
 .request-form {
   display: grid;
-  gap: 13px;
+  gap: 8px;
   min-width: 0;
 }
 
-.request-form.form--card {
-  padding: 18px 20px;
+.chat-input-container {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius, 2px);
   background: var(--surface);
+}
+
+.chat-input-container--flat {
+  box-shadow: none;
+}
+
+.chat-input-container--card {
   box-shadow: var(--micro-shadow);
 }
 
-.field-label {
-  margin-top: 1px;
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.preview-request {
+.chat-textarea {
   width: 100%;
-  min-height: 154px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius, 2px);
-  color: var(--ink);
-  background: var(--surface);
-  font: inherit;
-  line-height: 1.6;
-  resize: vertical;
-}
-
-.preview-request::placeholder {
-  color: var(--muted);
-  opacity: 0.8;
-}
-
-.file-drop-zone {
-  display: flex;
-  min-height: 82px;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius, 2px);
-  background: transparent;
-}
-
-.file-icon {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
-  color: var(--accent);
-}
-
-.file-copy {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-}
-
-.file-copy strong {
-  overflow-wrap: anywhere;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.file-copy small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.file-action {
-  margin-left: auto;
-  padding: 8px 0 8px 8px;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.primary-button {
-  width: 100%;
-  min-height: 48px;
-  margin-top: 6px;
-  padding: 0 20px;
+  min-height: 26px;
+  max-height: 160px;
+  padding: 14px 20px 8px;
   border: 0;
-  border-radius: var(--radius, 2px);
+  border-radius: 0;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  line-height: 1.5;
+  resize: none;
+  overflow-y: hidden;
+}
+
+.chat-textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px 12px;
+}
+
+.add-menu-button,
+.chat-send-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+}
+
+.add-menu-button {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+
+.chat-send-button {
   color: var(--accent-foreground);
   background: var(--accent);
-  font: inherit;
-  font-weight: 600;
-  opacity: 1;
-  cursor: default;
+  opacity: 0.42;
 }
 
-.primary-button:disabled {
-  opacity: 1;
-  cursor: default;
+.add-menu-button svg,
+.chat-send-button svg {
+  width: 21px;
+  height: 21px;
 }
 
 .preview-footer {
@@ -297,15 +268,6 @@ const previewStyle = computed<PreviewStyle>(() => {
 }
 
 @media (max-width: 380px) {
-  .file-drop-zone {
-    gap: 8px;
-    padding: 12px 9px;
-  }
-
-  .file-action {
-    padding-left: 2px;
-  }
-
   .preview-footer {
     margin-top: 30px;
   }

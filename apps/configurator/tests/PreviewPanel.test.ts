@@ -14,11 +14,10 @@ const referenceUi: ClientUiConfig = {
 };
 
 describe('PreviewPanel', () => {
-  it('renders the English preview with the configured brand and attachment limit', () => {
+  it('renders the English chat composer with the configured brand', () => {
     const wrapper = mount(PreviewPanel, {
       props: {
         displayName: 'Online English School',
-        maxAttachmentKb: 256,
         ui: referenceUi,
         locale: 'en',
         theme: 'light',
@@ -28,9 +27,13 @@ describe('PreviewPanel', () => {
     expect(wrapper.get('article').attributes('aria-label')).toBe('Preview');
     expect(wrapper.text()).toContain('Online English School');
     expect(wrapper.get('textarea').attributes('placeholder')).toBe(
-      'For example: create a ₽5,000 payment link for an English course',
+      'For example: create an invoice for 5,000 RUB for an English course',
     );
-    expect(wrapper.text()).toContain('up to 256 KB');
+    expect(wrapper.find('.chat-input-container').exists()).toBe(true);
+    expect(wrapper.find('.add-menu-button').exists()).toBe(true);
+    expect(wrapper.find('.chat-send-button').exists()).toBe(true);
+    expect(wrapper.find('.file-drop-zone').exists()).toBe(false);
+    expect(wrapper.find('.primary-button').exists()).toBe(false);
 
     wrapper.unmount();
   });
@@ -38,7 +41,6 @@ describe('PreviewPanel', () => {
   it('renders the brand fallback and handles custom-ui configuration', () => {
     const wrapper = mount(PreviewPanel, {
       props: {
-        maxAttachmentKb: 100,
         ui: {
           ...referenceUi,
           mode: 'custom-ui',
@@ -55,8 +57,9 @@ describe('PreviewPanel', () => {
     expect(wrapper.get('textarea').attributes('placeholder')).toContain(
       '5 000 ₽',
     );
-    expect(wrapper.text()).toContain('до 100 КБ');
-    expect(wrapper.get('.request-form').classes()).toContain('form--card');
+    expect(wrapper.get('.chat-input-container').classes()).toContain(
+      'chat-input-container--card',
+    );
     expect(wrapper.attributes('style')).toContain(
       '0 3px 10px rgb(0 0 0 / 32%)',
     );
@@ -65,13 +68,15 @@ describe('PreviewPanel', () => {
 
     const flatWithoutShadow = mount(PreviewPanel, {
       props: {
-        maxAttachmentKb: 100,
         ui: { ...referenceUi, shadow: 'none' },
         locale: 'ru',
         theme: 'light',
       },
     });
 
+    expect(flatWithoutShadow.get('.chat-input-container').classes()).toContain(
+      'chat-input-container--flat',
+    );
     expect(flatWithoutShadow.attributes('style')).toContain(
       '--micro-shadow: none',
     );

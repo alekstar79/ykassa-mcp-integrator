@@ -8,6 +8,10 @@
   --accent: #1a365d;
   --accent-foreground: #fff;
   --surface-hover: #f3f4f6;
+  --browser-body-surface: color-mix(in srgb, var(--paper) 98%, black 2%);
+  --browser-toolbar-surface: color-mix(in srgb, var(--paper) 96%, black 4%);
+  --browser-frame-shadow:
+    0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 6%);
   --error: #7f1d1d;
   --micro-shadow: 0 1px 3px rgb(17 24 39 / 7%);
   --radius: 2px;
@@ -30,6 +34,10 @@
   --accent: #60a5fa;
   --accent-foreground: #111827;
   --surface-hover: #374151;
+  --browser-body-surface: color-mix(in srgb, var(--paper) 98%, white 2%);
+  --browser-toolbar-surface: color-mix(in srgb, var(--paper) 96%, white 4%);
+  --browser-frame-shadow:
+    0 1px 2px rgb(0 0 0 / 30%), 0 12px 32px rgb(0 0 0 / 40%);
   --error: #fecaca;
   --micro-shadow: 0 1px 3px rgb(0 0 0 / 24%);
 }
@@ -185,12 +193,12 @@ h1 {
   width: 100%;
   max-width: 1080px;
   min-width: 0;
-  margin-inline: auto;
+  margin: clamp(24px, 5vh, 48px) auto 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
-  box-shadow: var(--micro-shadow);
+  box-shadow: var(--browser-frame-shadow);
 }
 
 .browser-toolbar {
@@ -201,7 +209,7 @@ h1 {
   min-height: 40px;
   padding: 0 12px;
   border-bottom: 1px solid var(--line);
-  background: var(--paper);
+  background: var(--browser-toolbar-surface);
 }
 
 .browser-dots {
@@ -251,7 +259,7 @@ h1 {
 .browser-body {
   min-width: 0;
   padding: 28px;
-  background: var(--surface);
+  background: var(--browser-body-surface);
 }
 
 .form-group {
@@ -329,14 +337,14 @@ h1 {
   font-weight: 600;
 }
 
-.field input:not([type="checkbox"]),
+.field input:not([type="checkbox"]):not([type="radio"]),
 .field select,
 .field textarea {
   width: 100%;
   min-height: 44px;
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 6px;
   background: var(--surface);
 }
 
@@ -533,7 +541,7 @@ h1 {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--error);
-  border-radius: var(--radius);
+  border-radius: 6px;
   color: var(--error);
   background: var(--surface);
 }

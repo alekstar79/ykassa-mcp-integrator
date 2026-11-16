@@ -3,6 +3,7 @@ import { load } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import {
   CLIENT_CONFIG_DEFAULTS,
+  DEFAULTS_BLOCK_FALLBACK,
   ClientConfigSchema,
 } from '@alekstar79/ykassa-contracts';
 import { buildClientZip } from '../src/export/buildZip.js';
@@ -53,7 +54,7 @@ async function extractZip(
 }
 
 describe('buildClientZip', () => {
-  it('creates the expected files and a valid config without brand.greeting', async () => {
+  it('creates the expected files and keeps only supported brand settings', async () => {
     const { archive, configYaml, config } = await extractZip();
     const files = Object.keys(archive.files).filter(
       (path) => !archive.files[path]?.dir,
@@ -71,8 +72,7 @@ describe('buildClientZip', () => {
       brand: { display_name: 'Online English School' },
       ui: { mode: 'reference-ui', accent: 'navy' },
     });
-    expect(config).not.toHaveProperty('brand.greeting');
-    expect(configYaml).not.toContain('greeting:');
+    expect(config.brand).toEqual({ display_name: 'Online English School' });
   });
 
   it('keeps shop credentials in .env and out of config.yaml', async () => {
@@ -82,6 +82,15 @@ describe('buildClientZip', () => {
     expect(env).toContain('YOOKASSA_MCP_TOKEN="test-token-123456"');
     expect(configYaml).not.toContain('123456789');
     expect(configYaml).not.toContain('test-token-123456');
+  });
+
+  it('writes the default values block to config.yaml', async () => {
+    const { configYaml, config } = await extractZip();
+
+    expect(configYaml).toContain('defaults:');
+    expect(config).toMatchObject({
+      defaults: DEFAULTS_BLOCK_FALLBACK,
+    });
   });
 
   it('writes only the custom UI mode and omits the reference brand', async () => {

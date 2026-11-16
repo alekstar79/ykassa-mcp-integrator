@@ -11,10 +11,6 @@ export interface Messages {
   previewManagerTitle: string;
   requestLabel: string;
   requestPlaceholder: string;
-  attachmentLabel: string;
-  attachmentHint: string;
-  chooseFile: string;
-  send: string;
   footer: string;
   visualSettingsHeading: string;
   previewEyebrow: string;
@@ -38,7 +34,6 @@ export interface Messages {
   secretHint: string;
   scenarioLabel: string;
   scenarioHint: string;
-  createInvoiceDemoDisabled: string;
   approvalThresholdLabel: string;
   approvalThresholdHint: string;
   requireHumanConfirmationLabel: string;
@@ -98,11 +93,7 @@ export const translations = {
     previewManagerTitle: 'Менеджер платежей',
     requestLabel: 'Что нужно сделать',
     requestPlaceholder:
-      'Например: создай платёжную ссылку на 5 000 ₽ за курс английского',
-    attachmentLabel: 'Приложить файл',
-    attachmentHint: 'Список в формате CSV или TXT, до {limit} КБ',
-    chooseFile: 'Выбрать',
-    send: 'Отправить',
+      'Например: выставь счёт на 5 000 ₽ за курс английского',
     footer: 'Проверяйте сумму и назначение перед подтверждением платежа.',
     visualSettingsHeading: 'Визуальные настройки Reference UI',
     previewEyebrow: 'Предпросмотр клиентского экрана',
@@ -127,8 +118,6 @@ export const translations = {
     secretHint: 'Хранится только в .env, не в config.yaml.',
     scenarioLabel: 'Разрешённые сценарии',
     scenarioHint: 'Выберите хотя бы один доступный MCP-инструмент.',
-    createInvoiceDemoDisabled:
-      'Отключён в демо из-за сложности валидации cart.',
     approvalThresholdLabel: 'Порог подтверждения',
     approvalThresholdHint:
       'Платежи до порога проходят автоматически, свыше требуют подтверждения.',
@@ -190,11 +179,7 @@ export const translations = {
     previewManagerTitle: 'Payment manager',
     requestLabel: 'What should be done?',
     requestPlaceholder:
-      'For example: create a ₽5,000 payment link for an English course',
-    attachmentLabel: 'Attach a file',
-    attachmentHint: 'CSV or TXT list, up to {limit} KB',
-    chooseFile: 'Choose file',
-    send: 'Send',
+      'For example: create an invoice for 5,000 RUB for an English course',
     footer: 'Check the amount and purpose before approving a payment.',
     visualSettingsHeading: 'Reference UI appearance',
     previewEyebrow: 'Client screen preview',
@@ -219,8 +204,6 @@ export const translations = {
     secretHint: 'Stored only in .env, never in config.yaml.',
     scenarioLabel: 'Allowed scenarios',
     scenarioHint: 'Select at least one available MCP tool.',
-    createInvoiceDemoDisabled:
-      'Disabled in the demo because cart validation is complex.',
     approvalThresholdLabel: 'Approval threshold',
     approvalThresholdHint:
       'Payments up to the threshold are automatic; higher amounts require approval.',

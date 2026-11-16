@@ -7,6 +7,7 @@ import BackendSection from './components/form/BackendSection.vue';
 import ClientSection from './components/form/ClientSection.vue';
 import UiSection from './components/form/UiSection.vue';
 import ValidationSummary from './components/ValidationSummary.vue';
+import PreviewPanel from './components/PreviewPanel.vue';
 import { useDownload } from './composables/useDownload';
 import { useFormState } from './composables/useFormState';
 import { useLocale } from './composables/useLocale';
@@ -14,7 +15,6 @@ import { useSecretVisibility } from './composables/useSecretVisibility';
 import { useTheme } from './composables/useTheme';
 import { useValidation } from './composables/useValidation';
 import { useViewMode } from './composables/useViewMode';
-import PreviewPanel from './components/PreviewPanel.vue';
 
 const { form, hasApprovalThreshold, updateNumber, toggleScenario, setHumanConfirmation } =
   useFormState();
@@ -54,7 +54,7 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
 </script>
 
 <template>
-  <main class="page">
+  <main class="page" :class="{ 'page--preview': viewMode === 'preview' }">
     <div class="page-shell">
       <header class="topbar">
         <p class="wordmark">YooKassa</p>
@@ -135,7 +135,6 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
           <PreviewPanel
             v-if="form.ui.mode === 'reference-ui'"
             :display-name="form.brand.display_name"
-            :max-attachment-kb="form.limits.max_attachment_kb"
             :ui="form.ui"
             :locale="locale"
             :theme="theme"
