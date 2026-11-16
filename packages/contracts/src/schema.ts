@@ -7,9 +7,13 @@ import {
   CLIENT_RADII,
   CLIENT_SHADOWS,
   CLIENT_UI_MODES,
+  isClientVatCode,
 } from './enums.js';
-import type { ClientRadius } from './enums.js';
-import { CLIENT_CONFIG_DEFAULTS } from './defaults.js';
+import type { ClientRadius, ClientVatCode } from './enums.js';
+import {
+  CLIENT_CONFIG_DEFAULTS,
+  DEFAULTS_BLOCK_FALLBACK,
+} from './defaults.js';
 import { CLIENT_LIMITS } from './limits.js';
 
 export const ClientUiConfigSchema = z
@@ -47,12 +51,26 @@ export const ClientLimitsSchema = z
       .default(CLIENT_CONFIG_DEFAULTS.limits.max_attachment_kb),
   });
 
+export const ClientDefaultsSchema = z.object({
+  currency: z
+    .enum(['RUB', 'USD', 'EUR'])
+    .default(DEFAULTS_BLOCK_FALLBACK.currency),
+  vat_code: z
+    .number()
+    .refine((value): value is ClientVatCode => isClientVatCode(value))
+    .default(DEFAULTS_BLOCK_FALLBACK.vat_code),
+  capture: z.boolean().default(DEFAULTS_BLOCK_FALLBACK.capture),
+  return_url: z.string().optional(),
+  invoice_expiry_days: z
+    .number()
+    .int()
+    .min(1)
+    .max(30)
+    .default(DEFAULTS_BLOCK_FALLBACK.invoice_expiry_days),
+});
+
 type ClientBrand = {
   display_name?: string;
-  tone?: string;
-  primary_color?: string;
-  greeting?: string;
-  [key: string]: unknown;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -64,7 +82,9 @@ const ClientBrandSchema = z
   .optional()
   .transform((value): ClientBrand | undefined => {
     if (!isRecord(value)) return undefined;
-    return value as ClientBrand;
+    return typeof value.display_name === 'string'
+      ? { display_name: value.display_name }
+      : {};
   });
 
 export const ClientConfigSchema = z.object({
@@ -74,4 +94,5 @@ export const ClientConfigSchema = z.object({
   brand: ClientBrandSchema,
   ui: ClientUiConfigSchema.default(CLIENT_CONFIG_DEFAULTS.ui),
   limits: ClientLimitsSchema.default(CLIENT_CONFIG_DEFAULTS.limits),
+  defaults: ClientDefaultsSchema.default(DEFAULTS_BLOCK_FALLBACK),
 });

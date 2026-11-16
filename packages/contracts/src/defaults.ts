@@ -1,5 +1,12 @@
 import { CLIENT_LIMITS } from './limits.js';
 
+export const DEFAULTS_BLOCK_FALLBACK = {
+  currency: 'RUB',
+  vat_code: 1,
+  capture: true,
+  invoice_expiry_days: 30,
+} as const;
+
 export const CLIENT_CONFIG_DEFAULTS = {
   ui: {
     mode: 'reference-ui',
