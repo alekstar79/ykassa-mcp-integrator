@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-contracts",
   "description": "Shared TypeScript types, Zod schema, enum values and accent palette for the YooKassa MCP integrator.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "license": "MIT",
   "type": "module",
   "private": false,
