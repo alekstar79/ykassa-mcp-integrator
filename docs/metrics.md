@@ -10,15 +10,15 @@
 
 ## How we collected the results
 
-On November 13, 2026, we tested one 100 RUB payment link and a request for
+On December 5, 2026, we tested one 100 RUB payment link and a request for
 five links at 100 RUB each in the test shop. The `gpt-4o` run went through the
 reference UI, API, LLM, YooKassa MCP, and back to the UI. The five-link
 request created all five links.
 
-That run used the pipeline as it existed on November 13, before
+That run used the pipeline as it existed on December 5, before
 `enrichToolCall` and Ajv JSON Schema validation were added.
 
-On November 17, a new run with the local `qwen2.5:7b-instruct` model reached
+On December 6, a new run with the local `qwen2.5:7b-instruct` model reached
 YooKassa MCP, but the store rejected the RUB currency. No link was created,
 so that failed run is not included in the timing table.
 

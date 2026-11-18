@@ -1,0 +1,71 @@
+name: Publish packages to GitHub Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require a version tag
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*) ;;
+            *)
+              echo "::error::Run this workflow on a version tag such as v1.0.5."
+              exit 1
+              ;;
+          esac
+          expected="${GITHUB_REF_NAME#v}"
+          node --input-type=module - "$expected" <<'NODE'
+          import fs from 'node:fs';
+
+          const expected = process.argv[2];
+          const manifests = [
+            'packages/contracts/package.json',
+            'apps/api/package.json',
+            'apps/cli/package.json',
+          ];
+
+          for (const manifest of manifests) {
+            const { version } = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+            if (version !== expected) {
+              console.error(`${manifest} is ${version}; expected ${expected}.`);
+              process.exitCode = 1;
+            }
+          }
+          NODE
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@alekstar79'
+
+      - run: npm ci
+      - run: npm run build:packages
+
+      - name: Publish contracts
+        run: npm publish --workspace=@alekstar79/ykassa-contracts --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish API
+        run: npm publish --workspace=@alekstar79/ykassa-api --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish CLI
+        run: npm publish --workspace=@alekstar79/ykassa-mcp --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
