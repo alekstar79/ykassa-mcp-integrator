@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Version tag to publish, for example v1.0.5
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,19 +18,20 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Require a version tag
         run: |
-          case "$GITHUB_REF" in
-            refs/tags/v*) ;;
-            *)
-              echo "::error::Run this workflow on a version tag such as v1.0.5."
-              exit 1
-              ;;
-          esac
-          expected="${GITHUB_REF_NAME#v}"
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected a release tag such as v1.0.5, got '$RELEASE_TAG'."
+            exit 1
+          fi
+          expected="${RELEASE_TAG#v}"
           node --input-type=module - "$expected" <<'NODE'
           import fs from 'node:fs';
 
