@@ -21,4 +21,16 @@ export const CLIENT_CONFIG_DEFAULTS = {
     max_messages: CLIENT_LIMITS.max_messages.default,
     max_attachment_kb: CLIENT_LIMITS.max_attachment_kb.default,
   },
+  messengers: {
+    telegram: {
+      enabled: false,
+      allowed_user_ids: [] as string[],
+      locale: 'ru',
+    },
+    max: {
+      enabled: false,
+      allowed_user_ids: [] as string[],
+      locale: 'ru',
+    },
+  },
 } as const;

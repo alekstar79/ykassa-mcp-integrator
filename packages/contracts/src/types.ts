@@ -3,6 +3,8 @@ import type {
   ClientConfigSchema,
   ClientDefaultsSchema,
   ClientLimitsSchema,
+  ClientMessengerPlatformConfigSchema,
+  ClientMessengersConfigSchema,
   ClientUiConfigSchema,
 } from './schema.js';
 
@@ -10,6 +12,12 @@ export type ClientConfig = z.infer<typeof ClientConfigSchema>;
 export type ClientDefaults = z.infer<typeof ClientDefaultsSchema>;
 export type ClientUiConfig = z.infer<typeof ClientUiConfigSchema>;
 export type ClientLimits = z.infer<typeof ClientLimitsSchema>;
+export type ClientMessengerPlatformConfig = z.infer<
+  typeof ClientMessengerPlatformConfigSchema
+>;
+export type ClientMessengersConfig = z.infer<
+  typeof ClientMessengersConfigSchema
+>;
 export type ClientBrand = NonNullable<ClientConfig['brand']>;
 
 export interface PublicClientConfig {

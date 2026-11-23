@@ -51,6 +51,27 @@ export const ClientLimitsSchema = z
       .default(CLIENT_CONFIG_DEFAULTS.limits.max_attachment_kb),
   });
 
+export const ClientMessengerPlatformConfigSchema = z.object({
+  enabled: z
+    .boolean()
+    .default(CLIENT_CONFIG_DEFAULTS.messengers.telegram.enabled),
+  allowed_user_ids: z
+    .array(z.string())
+    .default(CLIENT_CONFIG_DEFAULTS.messengers.telegram.allowed_user_ids),
+  locale: z
+    .enum(['ru', 'en'])
+    .default(CLIENT_CONFIG_DEFAULTS.messengers.telegram.locale),
+});
+
+export const ClientMessengersConfigSchema = z.object({
+  telegram: ClientMessengerPlatformConfigSchema.default(
+    CLIENT_CONFIG_DEFAULTS.messengers.telegram,
+  ),
+  max: ClientMessengerPlatformConfigSchema.default(
+    CLIENT_CONFIG_DEFAULTS.messengers.max,
+  ),
+});
+
 export const ClientDefaultsSchema = z.object({
   currency: z
     .enum(['RUB', 'USD', 'EUR'])
@@ -95,4 +116,5 @@ export const ClientConfigSchema = z.object({
   ui: ClientUiConfigSchema.default(CLIENT_CONFIG_DEFAULTS.ui),
   limits: ClientLimitsSchema.default(CLIENT_CONFIG_DEFAULTS.limits),
   defaults: ClientDefaultsSchema.default(DEFAULTS_BLOCK_FALLBACK),
+  messengers: ClientMessengersConfigSchema.optional(),
 });
