@@ -1,9 +1,14 @@
 # Demo Checklist
 
 ## Before the demo (T-1 day)
-- [ ] .env has valid YOOKASSA_SHOP_ID and YOOKASSA_MCP_TOKEN.
+- [ ] Root `.env` has the API's LLM settings and `PORT`; it contains no
+      YooKassa credentials.
+- [ ] Each demo client's `clients/<name>/.env` has valid
+      `YOOKASSA_SHOP_ID` and `YOOKASSA_MCP_TOKEN`.
+- [ ] If Telegram is enabled, `TELEGRAM_BOT_TOKEN` is in that client's `.env`
+      and the sender allowlist contains the intended Telegram user ID.
 - [ ] tools/list shows the tools you plan to use.
-- [ ] validate-config returns OK for both clients.
+- [ ] API and (if used) Messenger start successfully for each demo client.
 - [ ] Demo runs on the reference client end-to-end.
 - [ ] Demo runs on the second client end-to-end.
 - [ ] MCP call log has at least 5 entries.
@@ -15,7 +20,8 @@
 - [ ] Terminal font size >= 18.
 - [ ] Browser zoom >= 125%.
 - [ ] Notifications disabled.
-- [ ] run-demo.ts warmed up.
+- [ ] API and reference UI are ready; if demonstrating Telegram, the messenger
+      gateway is polling with the intended client enabled.
 - [ ] Backup recording ready.
 
 ## During the demo

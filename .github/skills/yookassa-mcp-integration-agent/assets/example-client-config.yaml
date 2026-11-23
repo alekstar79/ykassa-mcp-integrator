@@ -1,13 +1,7 @@
-# YooKassa MCP client configuration template.
-# Fill <SHOP_ID> and <MCP_TOKEN>, or use scripts/onboard-client.ts.
-
-shop_id: "<SHOP_ID>"
-mcp_token: "<MCP_TOKEN>"
+# Non-secret settings for a YooKassa MCP client.
+# Store YOOKASSA_SHOP_ID and YOOKASSA_MCP_TOKEN in clients/<name>/.env.
 
 # Must be a subset of tools confirmed by tools/list at runtime.
-# Official MCP: create_payment, get_payment, get_payments_list,
-#               get_refund, get_refunds_list, create_invoice.
-# Additional npm-only tools require explicit user approval (ASM-NNN).
 allowed_scenarios:
   - create_payment
   - get_payment
@@ -29,7 +23,7 @@ require_human_confirmation: true
 brand:
   display_name: "Online English School"
 
-# Reference client metadata (demo materials only).
+# Reference client metadata for demo materials.
 demo_metrics:
   monthly_payments: 3000
   active_subscriptions: 800

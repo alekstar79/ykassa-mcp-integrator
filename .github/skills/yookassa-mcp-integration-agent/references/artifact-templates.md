@@ -2,7 +2,7 @@
 
 All paths are relative to the project root, not to the skill directory.
 
-## docs/README.md
+## README.md
 
     # <Client Name> — YooKassa MCP Integration
 
@@ -10,16 +10,16 @@ All paths are relative to the project root, not to the skill directory.
     One paragraph.
 
     ## Quick start
-        npm install
-        cp .env.example .env
-        # fill YOOKASSA_SHOP_ID and YOOKASSA_MCP_TOKEN
-        npx tsx .github/skills/yookassa-mcp-integration-agent/scripts/onboard-client.ts <client-name>
-        npm run start:api --workspace=api --client <client-name>
+        npx @alekstar79/ykassa-mcp init my-client
+        npx @alekstar79/ykassa-mcp start
+        # In another terminal:
+        npx @alekstar79/ykassa-mcp web
 
     ## Architecture
     - MCP tools used: ...
     - LLM role: orchestration of MCP calls from natural language.
-    - Human-in-the-loop: approval queue in Vue 3 UI.
+    - Human-in-the-loop: explicit approval in the UI or Telegram/MAX
+      approval-card buttons. A free-text "yes" is not an approval.
 
     ## Onboarding a new client
         npx tsx .github/skills/yookassa-mcp-integration-agent/scripts/onboard-client.ts <new-client-name>
@@ -38,7 +38,7 @@ All paths are relative to the project root, not to the skill directory.
     | Metric | Manual | With agent | Delta |
     |---|---|---|---|
     | Create one payment link | X s | Y s | -Z% |
-    | Prepare 10 recurring charges | X min | Y s | -Z% |
+    | Review and approve a high-value payment | X s | Y s | -Z% |
     | Onboard a new client | n/a | Y min | — |
 
     Notes:
@@ -53,7 +53,7 @@ All paths are relative to the project root, not to the skill directory.
     |---|---|---|---|
     | 0:00-1:30 | Problem | ... | Slide 1 |
     | 1:30-4:30 | Live demo | ... | Terminal + browser |
-    | 4:30-6:00 | Complex case | ... | Approval queue |
+    | 4:30-6:00 | Complex case | ... | UI or Telegram/MAX approval card |
     | 6:00-7:30 | Onboarding second client | ... | Terminal |
     | 7:30-9:00 | Metrics | ... | docs/metrics.md |
     | 9:00-10:00 | Next steps | ... | Slide N |
@@ -61,11 +61,19 @@ All paths are relative to the project root, not to the skill directory.
     ## Fallback
     If the live demo fails, play docs/demo-recording.mp4.
 
-## Application contract (apps/api/src/main.ts)
+## Application contract
 
-    - Exposes POST /ask with body {"client": "<name>", "text": "<request>"}.
-    - Returns {"reply": "...", "requires_approval": bool, "proposed_action": {...}}.
-    - Uses the client config from clients/<name>/config.yaml.
-    - Calls MCP tools only if they are confirmed by tools/list.
-    - Never executes recurring charges or captures without human approval
-      when config.require_human_confirmation is true.
+Use [`docs/api-contract.md`](../../../../docs/api-contract.md) as the source of
+truth for the current HTTP routes, request bodies, response fields, and status
+codes. Do not copy an older route shape into generated documentation.
+
+The current API exposes:
+
+- `POST /api/ask` with `client` and a `messages` array. It returns `200` for a
+  completed response or `202` with approval details when a proposed operation
+  requires explicit approval.
+- `POST /api/approve` to approve or reject a pending `approval_id`.
+- `GET /api/clients/:name/public` for non-secret client display settings.
+
+The Messenger gateway is an independent HTTP client of the API. It does not
+call MCP tools or make payment-policy decisions itself.

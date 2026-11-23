@@ -64,3 +64,15 @@ ui:
   font_pair: manrope+jetbrains
   form_style: flat
   h1_size: m
+
+# Optional Telegram and MAX gateway settings. Add at least one allowed user ID
+# before enabling a platform; an empty allowlist denies access to everyone.
+messengers:
+  telegram:
+    enabled: false
+    allowed_user_ids: []
+    locale: ru
+  max:
+    enabled: false
+    allowed_user_ids: []
+    locale: ru
