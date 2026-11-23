@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-workspace",
   "description": "YooKassa MCP integrator monorepo: headless API, reference Vue UI, client configurator, CLI umbrella.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -33,7 +33,7 @@
     "dev:configurator": "npm run dev --workspace=@alekstar79/ykassa-configurator",
     "start:api": "npm run start --workspace=@alekstar79/ykassa-api",
     "build": "npm run build --workspaces --if-present",
-    "build:packages": "npm run build --workspace=@alekstar79/ykassa-contracts && npm run build --workspace=@alekstar79/ykassa-api && npm run build --workspace=@alekstar79/ykassa-web && npm run build --workspace=@alekstar79/ykassa-configurator && node scripts/sync-templates.mjs",
+    "build:packages": "npm run build --workspace=@alekstar79/ykassa-contracts && npm run build --workspace=@alekstar79/ykassa-api && npm run build --workspace=@alekstar79/ykassa-messenger && npm run build --workspace=@alekstar79/ykassa-web && npm run build --workspace=@alekstar79/ykassa-configurator && node scripts/sync-templates.mjs",
     "test": "npm run test --workspaces --if-present",
     "test:watch": "npm run test:watch --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present"

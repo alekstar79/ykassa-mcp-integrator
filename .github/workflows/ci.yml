@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run build --workspace=@alekstar79/ykassa-contracts
       - run: npx tsc --noEmit --project apps/api/tsconfig.json
+      - run: npx tsc --noEmit --project apps/messenger/tsconfig.json
       - run: npx tsc --noEmit --project apps/web/tsconfig.json
       - run: npx tsc --noEmit --project apps/configurator/tsconfig.json
       - run: npx tsc --noEmit --project packages/contracts/tsconfig.build.json

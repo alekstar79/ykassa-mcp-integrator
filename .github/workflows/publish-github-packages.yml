@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Version tag to publish, for example v1.0.5
+        description: Version tag to publish, for example v1.1.0
         required: true
         type: string
 
@@ -28,7 +28,7 @@ jobs:
       - name: Require a version tag
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Expected a release tag such as v1.0.5, got '$RELEASE_TAG'."
+            echo "::error::Expected a release tag such as v1.1.0, got '$RELEASE_TAG'."
             exit 1
           fi
           expected="${RELEASE_TAG#v}"
@@ -37,9 +37,13 @@ jobs:
 
           const expected = process.argv[2];
           const manifests = [
+            'package.json',
             'packages/contracts/package.json',
             'apps/api/package.json',
+            'apps/messenger/package.json',
             'apps/cli/package.json',
+            'apps/web/package.json',
+            'apps/configurator/package.json',
           ];
 
           for (const manifest of manifests) {
@@ -68,6 +72,11 @@ jobs:
 
       - name: Publish API
         run: npm publish --workspace=@alekstar79/ykassa-api --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Messenger
+        run: npm publish --workspace=@alekstar79/ykassa-messenger --registry=https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

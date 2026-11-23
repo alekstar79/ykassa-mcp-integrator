@@ -44,6 +44,13 @@ async function main() {
       ensureNoArguments(command, args);
       await serveApp('configurator', 5174);
       return;
+    case 'messenger':
+      ensureNoArguments(command, args);
+      process.env.CLIENTS_DIR = path.join(process.cwd(), 'clients');
+      process.env.DOTENV_CONFIG_PATH = path.join(process.cwd(), '.env');
+      process.env.MESSENGER_AUDIT_LOG_DIR = process.cwd();
+      await import('@alekstar79/ykassa-messenger/server');
+      return;
     default:
       throw new Error(`Unknown command. Run 'ykassa-mcp --help' for usage.`);
   }
@@ -57,6 +64,7 @@ Usage:
   ykassa-mcp start
   ykassa-mcp web
   ykassa-mcp configurator
+  ykassa-mcp messenger
   ykassa-mcp --help
   ykassa-mcp --version`);
 }
