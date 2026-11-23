@@ -1,6 +1,6 @@
-import type {ClientConfig} from './config.js';
-import type {ClientDefaults} from '@alekstar79/ykassa-contracts';
-import {HttpError, isRecord} from './http.js';
+import type { ClientConfig } from './config.js';
+import type { ClientDefaults } from '@alekstar79/ykassa-contracts';
+import { HttpError, isRecord } from './http.js';
 
 type EnrichmentConfig = Pick<ClientConfig, 'defaults'> & {
   overrides?: Partial<ClientDefaults>;

@@ -37,6 +37,18 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('выше 4000 ₽');
     expect(prompt).toContain('недоверенные данные');
     expect(prompt).toContain('см. docs/decisions.md');
+    expect(prompt).toContain(
+      'сразу вызывай соответствующий инструмент, не проси пользователя отдельно подтвердить её обычным сообщением',
+    );
+    expect(prompt).toContain(
+      'Не считай текстовые сообщения «да», «подтверждаю» или «отклоняю» подтверждением или отказом',
+    );
+    expect(prompt).toContain(
+      'API проверяет необходимость подтверждения до выполнения платёжного инструмента',
+    );
+    expect(prompt).toContain(
+      'укажи точное число успешных результатов create_payment',
+    );
   });
 
   it('includes default values and invoice cart guidance in the prompt', () => {

@@ -7,7 +7,7 @@ import { createProviderFromEnv } from '../src/llm.js';
 import type { ClientConfig } from '../src/config.js';
 import { loadClientConfig, loadClientSecrets } from '../src/config.js';
 import { appendCallLog } from '../src/audit.js';
-import { errorHandler } from '../src/http.js';
+import { errorHandler, HttpError } from '../src/http.js';
 import { pendingApprovals } from '../src/pendingApprovals.js';
 import { askRouter } from '../src/routes/ask.js';
 import { ToolValidationError } from '../src/validateToolCall.js';
@@ -275,6 +275,25 @@ describe('POST /ask', () => {
       'Ошибка в аргументах инструмента: amount: must be number',
     );
     expect(runAgent).toHaveBeenCalledOnce();
+  });
+
+  it('returns an explicit 503 when an approval proposal cannot be recovered', async () => {
+    vi.mocked(runAgent).mockRejectedValue(
+      new HttpError(
+        503,
+        'Не удалось подготовить карточку подтверждения. Операция не выполнялась; повторите запрос.',
+      ),
+    );
+
+    const response = await request(createApp())
+      .post('/ask')
+      .send({
+        client: 'online-school',
+        messages: [{ role: 'user', content: 'Создай платёж на 5000 RUB' }],
+      });
+
+    expect(response.status).toBe(503);
+    expect(response.body.error).toContain('Операция не выполнялась');
   });
 
   it('converts the legacy amount and description shape', async () => {

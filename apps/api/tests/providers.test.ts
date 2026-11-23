@@ -146,6 +146,32 @@ describe('OpenAI SSE provider', () => {
     expect(body.stream_options.include_usage).toBe(true);
   });
 
+  it('can require a tool call instead of accepting a text-only response', async () => {
+    const fetchMock = stubFetch(
+      sseResponse(
+        {
+          data: {
+            choices: [{ delta: {}, finish_reason: 'tool_calls' }],
+          },
+        },
+        { data: '[DONE]' },
+      ),
+    );
+    const result = await createOpenAI({ apiKey: 'test-key' }).chat({
+      ...request,
+      toolChoice: 'required',
+    });
+
+    await collect(result.stream);
+    await result.response;
+
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String(init?.body)) as {
+      tool_choice?: string;
+    };
+    expect(body.tool_choice).toBe('required');
+  });
+
   it('resolves usage-only responses and maps prior tool messages', async () => {
     stubFetch(
       sseResponse(

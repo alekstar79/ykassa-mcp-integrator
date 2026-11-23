@@ -19,6 +19,7 @@ import { readErrorBody, SSEParserStream, tryParseJSON } from '../sse-parser.js';
 export function createOpenAI(config: OpenAIConfig): LLMProvider {
   return {
     id: 'openai',
+    supportsRequiredToolChoice: true,
 
     async chat(request: ChatRequest): Promise<ChatStreamResult> {
       const url = getOpenAIChatCompletionsURL(config.baseURL);
@@ -39,6 +40,9 @@ export function createOpenAI(config: OpenAIConfig): LLMProvider {
             parameters: tool.parameters,
           },
         }));
+      }
+      if (request.toolChoice === 'required') {
+        body.tool_choice = 'required';
       }
 
       const httpResponse = await fetch(url, {

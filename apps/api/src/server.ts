@@ -16,8 +16,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('PORT must be an integer between 1 and 65535.');
 }
 
-const cwdClientsDir =
-  process.env.CLIENTS_DIR ?? path.join(process.cwd(), 'clients');
+const cwdClientsDir = process.env.CLIENTS_DIR ?? path.join(process.cwd(), 'clients');
 const clientsDir = existsSync(cwdClientsDir) ? cwdClientsDir : undefined;
 
 createApp({ clientsDir }).listen(port, () => {

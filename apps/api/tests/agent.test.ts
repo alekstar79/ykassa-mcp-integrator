@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ChatMessage, ChatStreamChunk } from '../src/llm.js';
+import type { ChatMessage, ChatRequest, ChatStreamChunk } from '../src/llm.js';
 import type { AgentConfig } from '../src/agentTypes.js';
 
 const mocks = vi.hoisted(() => ({
@@ -213,6 +213,193 @@ describe('runAgent', () => {
       },
     });
     expect(result.requiresApproval?.approvalId).toBeTruthy();
+    expect(mocks.callTool).not.toHaveBeenCalled();
+  });
+
+  it('requires a new explicit approval for each repeated risky request', async () => {
+    let callNumber = 0;
+    const provider = {
+      id: 'test',
+      chat: vi.fn(async () =>
+        streamResult(
+          toolCall(
+            `repeated-call-${++callNumber}`,
+            'create_payment',
+            '{"amount":{"value":"1500","currency":"RUB"}}',
+          ),
+        ),
+      ),
+    };
+    const messages = [{ role: 'user' as const, content: 'Create a payment' }];
+
+    const first = await runAgent(messages, config, {
+      provider,
+      model: 'test-model',
+    });
+    const repeated = await runAgent(messages, config, {
+      provider,
+      model: 'test-model',
+    });
+
+    expect(first.requiresApproval).toBeDefined();
+    expect(repeated.requiresApproval).toBeDefined();
+    expect(repeated.requiresApproval?.approvalId).not.toBe(
+      first.requiresApproval?.approvalId,
+    );
+    expect(mocks.callTool).not.toHaveBeenCalled();
+  });
+
+  it('retries a text-only confirmation as a required tool call and returns approval', async () => {
+    const requests: ChatRequest[] = [];
+    const provider = {
+      id: 'openai',
+      supportsRequiredToolChoice: true,
+      chat: vi.fn(async (request: ChatRequest) => {
+        requests.push(request);
+        return requests.length === 1
+          ? streamResult([
+              {
+                type: 'text-delta',
+                text: 'Сумма превышает лимит. Подтвердите выполнение.',
+              },
+              { type: 'finish', finishReason: 'stop' },
+            ])
+          : streamResult(
+              toolCall(
+                'recovered-payment',
+                'create_payment',
+                '{"amount":{"value":"5000","currency":"RUB"},"description":"Тестовый урок E2E"}',
+              ),
+            );
+      }),
+    };
+
+    const result = await runAgent(
+      [
+        {
+          role: 'user',
+          content:
+            'Создай платёжную ссылку на 5000 RUB за «Тестовый урок E2E».',
+        },
+      ],
+      config,
+      { provider, model: 'test-model' },
+    );
+
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.toolChoice).toBeUndefined();
+    expect(requests[1]?.toolChoice).toBe('required');
+    expect(requests[1]?.tools?.map((tool) => tool.name)).toEqual([
+      'create_payment',
+    ]);
+    expect(result.reply).toBe('');
+    expect(result.requiresApproval?.proposedActions).toEqual([
+      {
+        tool: 'create_payment',
+        args: {
+          amount: { value: '5000.00', currency: 'RUB' },
+          capture: true,
+          description: 'Тестовый урок E2E',
+        },
+        requires_confirmation: true,
+      },
+    ]);
+    expect(mocks.callTool).not.toHaveBeenCalled();
+  });
+
+  it('does not force a creation tool for a how-to question', async () => {
+    const provider = {
+      id: 'openai',
+      supportsRequiredToolChoice: true,
+      chat: vi.fn(async () =>
+        streamResult([
+          {
+            type: 'text-delta',
+            text: 'Для создания платежа сначала нужно подтвердить запрос.',
+          },
+          { type: 'finish', finishReason: 'stop' },
+        ]),
+      ),
+    };
+
+    const result = await runAgent(
+      [
+        {
+          role: 'user',
+          content: 'Как создать платёжную ссылку?',
+        },
+      ],
+      config,
+      { provider, model: 'test-model' },
+    );
+
+    expect(provider.chat).toHaveBeenCalledOnce();
+    expect(result.requiresApproval).toBeUndefined();
+  });
+
+  it('fails closed when the provider cannot force the approval proposal tool', async () => {
+    const provider = {
+      id: 'ollama',
+      chat: vi.fn(async () =>
+        streamResult([
+          {
+            type: 'text-delta',
+            text: 'Подтвердите создание платежа.',
+          },
+          { type: 'finish', finishReason: 'stop' },
+        ]),
+      ),
+    };
+
+    await expect(
+      runAgent(
+        [
+          {
+            role: 'user',
+            content: 'Создай платёжную ссылку на 5000 RUB.',
+          },
+        ],
+        config,
+        { provider, model: 'test-model' },
+      ),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(provider.chat).toHaveBeenCalledOnce();
+    expect(mocks.callTool).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if the provider still returns text after a required tool choice', async () => {
+    let requestCount = 0;
+    const provider = {
+      id: 'openai',
+      supportsRequiredToolChoice: true,
+      chat: vi.fn(async () => {
+        requestCount += 1;
+        return streamResult([
+          {
+            type: 'text-delta',
+            text:
+              requestCount === 1
+                ? 'Подтвердите создание платежа.'
+                : 'Подтвердите, и я продолжу.',
+          },
+          { type: 'finish', finishReason: 'stop' },
+        ]);
+      }),
+    };
+
+    await expect(
+      runAgent(
+        [
+          {
+            role: 'user',
+            content: 'Создай платёжную ссылку на 5000 RUB.',
+          },
+        ],
+        config,
+        { provider, model: 'test-model' },
+      ),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(provider.chat).toHaveBeenCalledTimes(2);
     expect(mocks.callTool).not.toHaveBeenCalled();
   });
 

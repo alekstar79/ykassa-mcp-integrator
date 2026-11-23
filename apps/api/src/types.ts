@@ -35,6 +35,7 @@ export interface ChatRequest {
   model: string;
   messages: ChatMessage[];
   tools?: ToolDefinition[];
+  toolChoice?: 'required';
   signal?: AbortSignal;
 }
 
@@ -56,6 +57,7 @@ export interface ChatStreamResult {
 
 export interface LLMProvider {
   readonly id: string;
+  readonly supportsRequiredToolChoice?: boolean;
   chat(request: ChatRequest): Promise<ChatStreamResult>;
 }
 

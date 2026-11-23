@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import type { ChatMessage, ToolDefinition } from './llm.js';
+import type {
+  ChatMessage,
+  ChatResponse,
+  ChatStreamChunk,
+  ToolDefinition,
+} from './llm.js';
 import { enforceFieldAllowlist, isToolAvailable } from './allowlist.js';
 import { resumeContinuation } from './continuation.js';
 import { isRiskyOperation } from './risky.js';
@@ -10,6 +15,7 @@ import { executeToolCall } from './toolExecutor.js';
 import { enrichToolCall } from './enrich.js';
 import { requireValidToolCall } from './validateToolCall.js';
 import { buildSystemPrompt } from './prompts.js';
+import { HttpError } from './http.js';
 import type {
   AgentConfig,
   AgentDeps,
@@ -19,6 +25,18 @@ import type {
 } from './agentTypes.js';
 
 const MAX_ROUNDTRIPS = 5;
+const APPROVAL_RECOVERY_INSTRUCTION =
+  'The previous response incorrectly asked for approval in chat text. Do not ask for approval in text. Call only the provided creation tool with the requested operation. The API will stop before execution and return an approval card.';
+
+class ApprovalCardRecoveryError extends HttpError {
+  constructor() {
+    super(
+      503,
+      'Не удалось подготовить карточку подтверждения. Операция не выполнялась; повторите запрос.',
+    );
+    this.name = 'ApprovalCardRecoveryError';
+  }
+}
 
 export async function runAgent(
   messages: ChatMessage[],
@@ -83,13 +101,38 @@ export async function runAgent(
       };
     }
 
+    let forcedToolName: string | undefined;
     while (roundtrip < MAX_ROUNDTRIPS) {
       roundtrip += 1;
-      const { stream, response } = await deps.provider.chat({
-        model: deps.model,
-        messages: history,
-        tools,
-      });
+      const requestTools =
+        forcedToolName === undefined
+          ? tools
+          : tools.filter((tool) => tool.name === forcedToolName);
+      if (
+        forcedToolName !== undefined &&
+        (deps.provider.supportsRequiredToolChoice !== true ||
+          requestTools.length !== 1)
+      ) {
+        throw new ApprovalCardRecoveryError();
+      }
+
+      let stream: ReadableStream<ChatStreamChunk>;
+      let response: Promise<ChatResponse>;
+      try {
+        ({ stream, response } = await deps.provider.chat({
+          model: deps.model,
+          messages: history,
+          tools: requestTools,
+          ...(forcedToolName === undefined
+            ? {}
+            : { toolChoice: 'required' as const }),
+        }));
+      } catch (error) {
+        if (forcedToolName !== undefined) {
+          throw new ApprovalCardRecoveryError();
+        }
+        throw error;
+      }
 
       let accumulatedText = '';
       const collectedToolCalls = new Map<
@@ -98,41 +141,62 @@ export async function runAgent(
       >();
       let finishReason: 'stop' | 'tool-calls' | 'length' | 'error' = 'stop';
       const reader = stream.getReader();
-      for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
-        const value = chunk.value;
-        if (value.type === 'text-delta') {
-          accumulatedText += value.text;
-        } else if (value.type === 'tool-call-start') {
-          collectedToolCalls.set(value.toolCallId, {
-            name: value.toolName,
-            args: '',
-          });
-        } else if (value.type === 'tool-call-delta') {
-          const entry = collectedToolCalls.get(value.toolCallId);
-          if (entry !== undefined) entry.args += value.args;
-        } else if (value.type === 'finish') {
-          finishReason = value.finishReason;
-        } else if (value.type === 'error') {
-          throw value.error;
+      try {
+        for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+          const value = chunk.value;
+          if (value.type === 'text-delta') {
+            accumulatedText += value.text;
+          } else if (value.type === 'tool-call-start') {
+            collectedToolCalls.set(value.toolCallId, {
+              name: value.toolName,
+              args: '',
+            });
+          } else if (value.type === 'tool-call-delta') {
+            const entry = collectedToolCalls.get(value.toolCallId);
+            if (entry !== undefined) entry.args += value.args;
+          } else if (value.type === 'finish') {
+            finishReason = value.finishReason;
+          } else if (value.type === 'error') {
+            throw value.error;
+          }
         }
+        await response;
+      } catch (error) {
+        if (forcedToolName !== undefined) {
+          throw new ApprovalCardRecoveryError();
+        }
+        throw error;
+      } finally {
+        reader.releaseLock();
       }
-      reader.releaseLock();
-      await response;
 
-      if (finishReason !== 'tool-calls') {
+      if (finishReason !== 'tool-calls' || collectedToolCalls.size === 0) {
+        if (forcedToolName !== undefined) {
+          throw new ApprovalCardRecoveryError();
+        }
+        const recoveryToolName =
+          continuation === undefined && finishReason === 'stop'
+            ? confirmationRecoveryTool(messages, accumulatedText)
+            : undefined;
+        if (recoveryToolName !== undefined) {
+          const systemMessage = history.find(
+            (message) => message.role === 'system',
+          );
+          if (
+            deps.provider.supportsRequiredToolChoice !== true ||
+            !tools.some((tool) => tool.name === recoveryToolName) ||
+            systemMessage === undefined
+          ) {
+            throw new ApprovalCardRecoveryError();
+          }
+          systemMessage.content += `\n\n${APPROVAL_RECOVERY_INSTRUCTION}`;
+          forcedToolName = recoveryToolName;
+          continue;
+        }
         return {
           reply: sanitizeReply(accumulatedText),
           toolCalls: executedToolCalls,
         };
-      }
-      if (collectedToolCalls.size === 0) {
-        if (accumulatedText !== '') {
-          return {
-            reply: sanitizeReply(accumulatedText),
-            toolCalls: executedToolCalls,
-          };
-        }
-        continue;
       }
 
       const assistantToolCalls: Array<{
@@ -153,6 +217,14 @@ export async function runAgent(
           continue;
         }
         assistantToolCalls.push({ id, name: entry.name, args });
+      }
+
+      if (
+        forcedToolName !== undefined &&
+        (assistantToolCalls.length === 0 ||
+          assistantToolCalls.some((toolCall) => toolCall.name !== forcedToolName))
+      ) {
+        throw new ApprovalCardRecoveryError();
       }
 
       if (assistantToolCalls.length > 0) {
@@ -187,21 +259,36 @@ export async function runAgent(
           continue;
         }
 
-        const sanitizedToolCall = {
-          id: toolCall.id,
-          name: toolCall.name,
-          args: requireValidToolCall(
-            toolCall.name,
-            enrichToolCall(
-              toolCall.name,
-              enforceFieldAllowlist(toolCall.name, toolCall.args),
-              effectiveConfig,
-            ).args,
-            toolsListResponse.tools,
-          ),
+        let sanitizedToolCall: {
+          id: string;
+          name: string;
+          args: Record<string, unknown>;
         };
+        try {
+          sanitizedToolCall = {
+            id: toolCall.id,
+            name: toolCall.name,
+            args: requireValidToolCall(
+              toolCall.name,
+              enrichToolCall(
+                toolCall.name,
+                enforceFieldAllowlist(toolCall.name, toolCall.args),
+                effectiveConfig,
+              ).args,
+              toolsListResponse.tools,
+            ),
+          };
+        } catch (error) {
+          if (forcedToolName !== undefined) {
+            throw new ApprovalCardRecoveryError();
+          }
+          throw error;
+        }
         validatedToolCalls.push(sanitizedToolCall);
-        if (isRiskyOperation(sanitizedToolCall, effectiveConfig)) {
+        if (
+          isRiskyOperation(sanitizedToolCall, effectiveConfig) ||
+          sanitizedToolCall.name === forcedToolName
+        ) {
           riskyToolCalls.push(sanitizedToolCall);
         }
       }
@@ -210,15 +297,16 @@ export async function runAgent(
         const proposedActions = validatedToolCalls.map(({ name, args }) => ({
           tool: name,
           args,
-          requires_confirmation: isRiskyOperation(
-            { name, args },
-            effectiveConfig,
-          ),
+          requires_confirmation:
+            isRiskyOperation({ name, args }, effectiveConfig) ||
+            name === forcedToolName,
         }));
         return {
           reply:
-            accumulatedText ||
-            'Требуется подтверждение менеджера для выполнения операции.',
+            forcedToolName !== undefined
+              ? ''
+              : accumulatedText ||
+                'Требуется подтверждение менеджера для выполнения операции.',
           toolCalls: executedToolCalls,
           requiresApproval: {
             approvalId: randomUUID(),
@@ -244,6 +332,59 @@ export async function runAgent(
           deps,
         );
       }
+    }
+
+    function confirmationRecoveryTool(
+      messages: ChatMessage[],
+      reply: string,
+    ): string | undefined {
+      if (
+        !/подтверд|одобр|согласован|продолж|please\s+(?:confirm|approve)|\b(?:confirm|approval|approve|proceed|continue)\b/iu.test(
+          reply,
+        )
+      ) {
+        return undefined;
+      }
+
+      let latestUserMessage: string | undefined;
+      for (let index = messages.length - 1; index >= 0; index -= 1) {
+        const message = messages[index];
+        if (message?.role === 'user') {
+          latestUserMessage = message.content;
+          break;
+        }
+      }
+      if (latestUserMessage === undefined) return undefined;
+
+      const createVerb =
+        /создай(?:те)?|создать|сформируй(?:те)?|сформировать|сделай(?:те)?|сделать|выставь(?:те)?|выставить|create|make|generate|issue/iu.exec(
+          latestUserMessage,
+        );
+      if (createVerb === null) return undefined;
+
+      if (
+        /^\s*(?:как(?:\s+мне)?\s+|how\s+(?:do|can)\s+|how\s+to\s+)/iu.test(
+          latestUserMessage,
+        ) ||
+        /(?:^|[\s,])не\s+(?:(?:надо|нужно)\s+)?(?:созда|сформир|сдел|выстав)/iu.test(
+          latestUserMessage,
+        ) ||
+        /\b(?:don't|do not|never)\s+(?:want\s+to\s+)?(?:create|make|generate|issue)\b/iu.test(
+          latestUserMessage,
+        )
+      ) {
+        return undefined;
+      }
+
+      const prefix = latestUserMessage.slice(0, createVerb.index).trimEnd();
+      if (/(?:^|[\s,])(?:не|как|how|don't|do not|never)\s*$/iu.test(prefix)) {
+        return undefined;
+      }
+
+      const asksForPayment = /плат[её]ж|оплат|payment/iu.test(latestUserMessage);
+      const asksForInvoice = /сч[её]т|invoice/iu.test(latestUserMessage);
+      if (asksForPayment === asksForInvoice) return undefined;
+      return asksForPayment ? 'create_payment' : 'create_invoice';
     }
 
     return {
