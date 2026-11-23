@@ -11,6 +11,7 @@ export function useFormState() {
     name: '',
     shop_id: '',
     mcp_token: '',
+    clientMode: 'reference-ui',
     allowed_scenarios: initialAllowedScenarios,
     approval_threshold: 0,
     require_human_confirmation: false,
@@ -19,6 +20,20 @@ export function useFormState() {
     },
     ui: { ...CLIENT_CONFIG_DEFAULTS.ui },
     limits: { ...CLIENT_CONFIG_DEFAULTS.limits },
+    messengers: {
+      telegram: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: CLIENT_CONFIG_DEFAULTS.messengers.telegram.locale,
+        bot_token: '',
+      },
+      max: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: CLIENT_CONFIG_DEFAULTS.messengers.max.locale,
+        bot_token: '',
+      },
+    },
   });
   const hasApprovalThreshold = ref(false);
 

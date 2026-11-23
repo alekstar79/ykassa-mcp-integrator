@@ -14,12 +14,27 @@ function validForm(overrides: Partial<ClientZipForm> = {}): ClientZipForm {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-token-123456',
+    clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,
     require_human_confirmation: false,
     brand: { display_name: 'Online English School' },
     ui: { ...CLIENT_CONFIG_DEFAULTS.ui },
     limits: { ...CLIENT_CONFIG_DEFAULTS.limits },
+    messengers: {
+      telegram: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+      max: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+    },
   };
 
   return {
@@ -28,6 +43,16 @@ function validForm(overrides: Partial<ClientZipForm> = {}): ClientZipForm {
     brand: { ...defaults.brand, ...overrides.brand },
     ui: { ...defaults.ui, ...overrides.ui },
     limits: { ...defaults.limits, ...overrides.limits },
+    messengers: {
+      telegram: {
+        ...defaults.messengers.telegram,
+        ...overrides.messengers?.telegram,
+      },
+      max: {
+        ...defaults.messengers.max,
+        ...overrides.messengers?.max,
+      },
+    },
   };
 }
 
@@ -73,6 +98,7 @@ describe('buildClientZip', () => {
       ui: { mode: 'reference-ui', accent: 'navy' },
     });
     expect(config.brand).toEqual({ display_name: 'Online English School' });
+    expect(config).not.toHaveProperty('messengers');
   });
 
   it('keeps shop credentials in .env and out of config.yaml', async () => {
@@ -82,6 +108,105 @@ describe('buildClientZip', () => {
     expect(env).toContain('YOOKASSA_MCP_TOKEN="test-token-123456"');
     expect(configYaml).not.toContain('123456789');
     expect(configYaml).not.toContain('test-token-123456');
+  });
+
+  it('exports enabled messenger settings and tokens to the correct files', async () => {
+    const form = validForm({
+      clientMode: 'messengers',
+      messengers: {
+        telegram: {
+          enabled: true,
+          allowed_user_ids_text: ' 101\n202\n101 ',
+          locale: 'en',
+          bot_token: 'telegram-secret-token',
+        },
+        max: {
+          enabled: true,
+          allowed_user_ids_text: '303',
+          locale: 'ru',
+          bot_token: 'max-secret-token',
+        },
+      },
+    });
+    const { configYaml, config, env, readme } = await extractZip(form);
+
+    expect(config).toMatchObject({
+      messengers: {
+        telegram: {
+          enabled: true,
+          allowed_user_ids: ['101', '202'],
+          locale: 'en',
+        },
+        max: {
+          enabled: true,
+          allowed_user_ids: ['303'],
+          locale: 'ru',
+        },
+      },
+    });
+    expect(config).toMatchObject({ ui: { mode: 'custom-ui' } });
+    expect(config).not.toHaveProperty('ui.accent');
+    expect(config).not.toHaveProperty('brand');
+    expect(env).toContain('TELEGRAM_BOT_TOKEN="telegram-secret-token"');
+    expect(env).toContain('MAX_BOT_TOKEN="max-secret-token"');
+    expect(configYaml).not.toContain('telegram-secret-token');
+    expect(configYaml).not.toContain('max-secret-token');
+    expect(readme).toContain(
+      'npm run start --workspace=@alekstar79/ykassa-messenger',
+    );
+    expect(readme).toContain('не коммитьте');
+  });
+
+  it('does not export disabled messenger tokens', async () => {
+    const { env } = await extractZip(
+      validForm({
+        messengers: {
+          telegram: {
+            enabled: false,
+            allowed_user_ids_text: '',
+            locale: 'ru',
+            bot_token: 'unused-telegram-token',
+          },
+          max: {
+            enabled: false,
+            allowed_user_ids_text: '',
+            locale: 'ru',
+            bot_token: 'unused-max-token',
+          },
+        },
+      }),
+    );
+
+    expect(env).not.toContain('TELEGRAM_BOT_TOKEN');
+    expect(env).not.toContain('MAX_BOT_TOKEN');
+    expect(env).not.toContain('unused-telegram-token');
+    expect(env).not.toContain('unused-max-token');
+  });
+
+  it('does not export messenger settings for the Reference UI profile', async () => {
+    const { config, env, readme } = await extractZip(
+      validForm({
+        messengers: {
+          telegram: {
+            enabled: true,
+            allowed_user_ids_text: '101',
+            locale: 'ru',
+            bot_token: 'telegram-secret-token',
+          },
+          max: {
+            enabled: false,
+            allowed_user_ids_text: '',
+            locale: 'ru',
+            bot_token: '',
+          },
+        },
+      }),
+    );
+
+    expect(config).not.toHaveProperty('messengers');
+    expect(env).not.toContain('TELEGRAM_BOT_TOKEN');
+    expect(env).not.toContain('telegram-secret-token');
+    expect(readme).not.toContain('@alekstar79/ykassa-messenger');
   });
 
   it('writes the default values block to config.yaml', async () => {
@@ -94,15 +219,20 @@ describe('buildClientZip', () => {
   });
 
   it('writes only the custom UI mode and omits the reference brand', async () => {
-    const { config } = await extractZip(
+    const { config, readme } = await extractZip(
       validForm({
+        clientMode: 'custom-ui',
         ui: { ...CLIENT_CONFIG_DEFAULTS.ui, mode: 'custom-ui' },
       }),
     );
 
     expect(config).toMatchObject({ ui: { mode: 'custom-ui' } });
-    expect(config).not.toHaveProperty('brand');
     expect(config).not.toHaveProperty('ui.accent');
+    expect(config).not.toHaveProperty('brand');
+    expect(config).not.toHaveProperty('messengers');
+    expect(readme).toContain('Запустите API командой `npm run start:api`');
+    expect(readme).not.toContain('npm run dev');
+    expect(readme).toContain('Разработайте собственный интерфейс');
   });
 
   it('rejects invalid names, secrets, and client configuration', async () => {
@@ -122,8 +252,86 @@ describe('buildClientZip', () => {
       buildClientZip(validForm({ mcp_token: 'placeholder-token' })),
     ).rejects.toThrow('MCP token is missing or is a placeholder.');
     await expect(
+      buildClientZip(
+        validForm({
+          clientMode: 'messengers',
+          messengers: {
+            telegram: {
+              enabled: true,
+              allowed_user_ids_text: '101',
+              locale: 'ru',
+              bot_token: '',
+            },
+            max: {
+              enabled: false,
+              allowed_user_ids_text: '',
+              locale: 'ru',
+              bot_token: '',
+            },
+          },
+        }),
+      ),
+    ).rejects.toThrow('telegram bot token is missing or is a placeholder.');
+    await expect(
+      buildClientZip(
+        validForm({
+          clientMode: 'messengers',
+          messengers: {
+            telegram: {
+              enabled: true,
+              allowed_user_ids_text: '',
+              locale: 'ru',
+              bot_token: 'telegram-secret-token',
+            },
+            max: {
+              enabled: false,
+              allowed_user_ids_text: '',
+              locale: 'ru',
+              bot_token: '',
+            },
+          },
+        }),
+      ),
+    ).rejects.toThrow('telegram requires at least one allowed user ID.');
+    await expect(
       buildClientZip(validForm({ allowed_scenarios: [] })),
     ).rejects.toThrow('Client configuration is invalid:');
+  });
+
+  it('rejects a messenger client without an enabled platform', async () => {
+    await expect(
+      buildClientZip(validForm({ clientMode: 'messengers' })),
+    ).rejects.toThrow('Enable at least one messenger platform.');
+  });
+
+  it('writes messenger-only startup instructions', async () => {
+    const { readme } = await extractZip(
+      validForm({
+        clientMode: 'messengers',
+        messengers: {
+          telegram: {
+            enabled: true,
+            allowed_user_ids_text: '101',
+            locale: 'ru',
+            bot_token: 'telegram-secret-token',
+          },
+          max: {
+            enabled: false,
+            allowed_user_ids_text: '',
+            locale: 'ru',
+            bot_token: '',
+          },
+        },
+      }),
+    );
+
+    expect(readme).toContain('npm run start:api');
+    expect(readme).toContain(
+      'npm run start --workspace=@alekstar79/ykassa-messenger',
+    );
+    expect(readme).toContain('API_BASE_URL');
+    expect(readme).not.toContain('npm run dev');
+    expect(readme).not.toContain('localhost:5173');
   });
 
   it('writes Russian onboarding instructions by default', async () => {

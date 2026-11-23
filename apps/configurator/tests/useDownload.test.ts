@@ -24,12 +24,27 @@ function createHarness(initiallyValid = true) {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-token-123456',
+    clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,
     require_human_confirmation: false,
     brand: { display_name: 'Online School' },
     ui: { ...CLIENT_CONFIG_DEFAULTS.ui },
     limits: { ...CLIENT_CONFIG_DEFAULTS.limits },
+    messengers: {
+      telegram: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+      max: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+    },
   });
   const isFormValid = ref(initiallyValid);
   const errors = ref<Record<string, string>>({});
@@ -155,6 +170,11 @@ describe('useDownload', () => {
         name: form.value.name,
         shop_id: form.value.shop_id,
         mcp_token: form.value.mcp_token,
+        clientMode: 'reference-ui',
+        messengers: {
+          telegram: expect.objectContaining({ enabled: false }),
+          max: expect.objectContaining({ enabled: false }),
+        },
       }),
       'ru',
     );

@@ -5,6 +5,7 @@ import BrowserFrame from './components/BrowserFrame.vue';
 import HeaderControls from './components/HeaderControls.vue';
 import BackendSection from './components/form/BackendSection.vue';
 import ClientSection from './components/form/ClientSection.vue';
+import MessengersSection from './components/form/MessengersSection.vue';
 import UiSection from './components/form/UiSection.vue';
 import ValidationSummary from './components/ValidationSummary.vue';
 import PreviewPanel from './components/PreviewPanel.vue';
@@ -62,11 +63,11 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
           :locale="locale"
           :theme="theme"
           :view-mode="viewMode"
-          :ui-mode="form.ui.mode"
+          :client-mode="form.clientMode"
           :messages="messages"
           @set-locale="setLocale"
           @toggle-theme="toggleTheme"
-          @toggle-view-mode="toggleViewMode(form.ui.mode)"
+          @toggle-view-mode="toggleViewMode(form.clientMode)"
         />
       </header>
 
@@ -103,6 +104,13 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
             :error-for="errorFor"
             :described-by="describedBy"
           />
+          <MessengersSection
+            v-if="form.clientMode === 'messengers'"
+            :form="form"
+            :messages="messages"
+            :error-for="errorFor"
+            :described-by="describedBy"
+          />
 
           <div class="form-actions">
             <ValidationSummary
@@ -133,7 +141,7 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
           :frame-style="previewFrameStyle"
         >
           <PreviewPanel
-            v-if="form.ui.mode === 'reference-ui'"
+            v-if="form.clientMode === 'reference-ui'"
             :display-name="form.brand.display_name"
             :ui="form.ui"
             :locale="locale"

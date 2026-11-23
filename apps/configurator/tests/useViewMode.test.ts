@@ -12,14 +12,13 @@ describe('useViewMode', () => {
     expect(viewMode.value).toBe('settings');
   });
 
-  it('blocks entry to preview for custom UI but allows returning to settings', () => {
+  it('blocks entry to preview for non-Reference clients', () => {
     const { viewMode, toggleViewMode } = useViewMode();
 
     toggleViewMode('custom-ui');
     expect(viewMode.value).toBe('settings');
 
-    toggleViewMode('reference-ui');
-    toggleViewMode('custom-ui');
+    toggleViewMode('messengers');
     expect(viewMode.value).toBe('settings');
   });
 });

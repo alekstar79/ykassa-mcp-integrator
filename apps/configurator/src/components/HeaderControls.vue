@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { Locale, Messages } from '../i18n';
-import type { Theme, ViewMode } from '../types';
-import type { ClientUiConfig } from '@alekstar79/ykassa-contracts';
+import type { ClientMode, Theme, ViewMode } from '../types';
 
 defineProps<{
   locale: Locale;
   theme: Theme;
   viewMode: ViewMode;
-  uiMode: ClientUiConfig['mode'];
+  clientMode: ClientMode;
   messages: Messages;
 }>();
 
@@ -47,8 +46,10 @@ const emit = defineEmits<{
           ? messages.previewViewLabel
           : messages.settingsViewLabel
       "
-      :title="uiMode === 'custom-ui' ? messages.previewUnavailable : undefined"
-      :disabled="uiMode === 'custom-ui'"
+      :title="
+        clientMode !== 'reference-ui' ? messages.previewUnavailable : undefined
+      "
+      :disabled="clientMode !== 'reference-ui'"
       @click="emit('toggle-view-mode')"
     >
       <svg

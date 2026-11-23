@@ -20,6 +20,7 @@ const emit = defineEmits<{
 <template>
   <section class="form-group" :aria-labelledby="'client-group-title'">
     <h2 id="client-group-title">{{ messages.clientGroup }}</h2>
+    <p class="field-hint">{{ messages.archiveSecretsHint }}</p>
     <div class="field-grid">
       <div class="field">
         <label for="client-name">{{ messages.nameLabel }}</label>

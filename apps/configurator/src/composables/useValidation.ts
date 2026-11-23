@@ -7,6 +7,7 @@ import {
   CLIENT_NAME_PATTERN,
   isPlaceholderSecret,
 } from '../export/buildZip';
+import { parseAllowedUserIds } from '../messengerConfig';
 import type { Messages } from '../i18n';
 import type { FormState, ValidationSummaryItem } from '../types';
 
@@ -50,6 +51,7 @@ export function useValidation(
 
   const fieldErrors = computed<Record<string, string>>(() => {
     const errors: Record<string, string> = {};
+    const isMessengerClient = form.value.clientMode === 'messengers';
     const configResult = ClientConfigSchema.safeParse({
       allowed_scenarios: form.value.allowed_scenarios,
       approval_threshold: hasApprovalThreshold.value
@@ -57,8 +59,31 @@ export function useValidation(
         : undefined,
       require_human_confirmation: form.value.require_human_confirmation,
       brand: form.value.brand,
-      ui: form.value.ui,
+      ui:
+        form.value.clientMode === 'reference-ui'
+          ? form.value.ui
+          : { mode: 'custom-ui' },
       limits: form.value.limits,
+      ...(isMessengerClient
+        ? {
+            messengers: {
+              telegram: {
+                enabled: form.value.messengers.telegram.enabled,
+                allowed_user_ids: parseAllowedUserIds(
+                  form.value.messengers.telegram.allowed_user_ids_text,
+                ),
+                locale: form.value.messengers.telegram.locale,
+              },
+              max: {
+                enabled: form.value.messengers.max.enabled,
+                allowed_user_ids: parseAllowedUserIds(
+                  form.value.messengers.max.allowed_user_ids_text,
+                ),
+                locale: form.value.messengers.max.locale,
+              },
+            },
+          }
+        : {}),
     });
 
     if (!configResult.success) {
@@ -91,6 +116,32 @@ export function useValidation(
       errors.mcp_token = messages.value.errors.mcpTokenPlaceholder;
     }
 
+    if (isMessengerClient) {
+      const enabledPlatforms = (['telegram', 'max'] as const).filter(
+        (platform) => form.value.messengers[platform].enabled,
+      );
+      if (enabledPlatforms.length === 0) {
+        errors.clientMode = messages.value.errors.messengerRequired;
+      }
+
+      for (const platform of enabledPlatforms) {
+        const messenger = form.value.messengers[platform];
+        const tokenField = `messengers.${platform}.bot_token`;
+        const allowlistField = `messengers.${platform}.allowed_user_ids_text`;
+        const token = messenger.bot_token.trim();
+        if (!token) {
+          errors[tokenField] = messages.value.errors.messengerTokenRequired;
+        } else if (isPlaceholderSecret(token)) {
+          errors[tokenField] = messages.value.errors.messengerTokenPlaceholder;
+        }
+
+        if (parseAllowedUserIds(messenger.allowed_user_ids_text).length === 0) {
+          errors[allowlistField] =
+            messages.value.errors.messengerAllowlistRequired;
+        }
+      }
+    }
+
     return errors;
   });
 
@@ -99,6 +150,12 @@ export function useValidation(
       name: messages.value.nameSummaryLabel,
       shop_id: messages.value.shopIdLabel,
       mcp_token: messages.value.mcpTokenLabel,
+      'messengers.telegram.bot_token': messages.value.telegramBotTokenLabel,
+      'messengers.max.bot_token': messages.value.maxBotTokenLabel,
+      'messengers.telegram.allowed_user_ids_text':
+        messages.value.allowedUserIdsLabel,
+      'messengers.max.allowed_user_ids_text':
+        messages.value.allowedUserIdsLabel,
       allowed_scenarios: messages.value.scenarioLabel,
       approval_threshold: messages.value.approvalThresholdLabel,
       require_human_confirmation:
@@ -106,7 +163,7 @@ export function useValidation(
       'limits.max_messages': messages.value.maxMessagesLabel,
       'limits.max_attachment_kb': messages.value.maxAttachmentLabel,
       'brand.display_name': messages.value.displayNameLabel,
-      'ui.mode': messages.value.modeLabel,
+      clientMode: messages.value.modeLabel,
       'ui.accent': messages.value.accentLabel,
       'ui.radius': messages.value.radiusLabel,
       'ui.shadow': messages.value.shadowLabel,

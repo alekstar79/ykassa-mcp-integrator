@@ -40,6 +40,7 @@ export function useDownload({
         name: form.value.name,
         shop_id: form.value.shop_id,
         mcp_token: form.value.mcp_token,
+        clientMode: form.value.clientMode,
         allowed_scenarios: [...form.value.allowed_scenarios],
         approval_threshold: hasApprovalThreshold.value
           ? form.value.approval_threshold
@@ -48,6 +49,10 @@ export function useDownload({
         brand: { display_name: form.value.brand.display_name },
         ui: { ...form.value.ui },
         limits: { ...form.value.limits },
+        messengers: {
+          telegram: { ...form.value.messengers.telegram },
+          max: { ...form.value.messengers.max },
+        },
       };
       const blob = await buildClientZip(zipForm, locale.value);
       objectUrl = URL.createObjectURL(blob);

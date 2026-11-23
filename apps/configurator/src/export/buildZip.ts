@@ -7,6 +7,12 @@ import {
   type ClientUiConfig,
 } from '@alekstar79/ykassa-contracts';
 import type { Locale } from '../i18n';
+import { parseAllowedUserIds } from '../messengerConfig';
+import type {
+  ClientMode,
+  ClientMessengerPlatform,
+  MessengerFormState,
+} from '../types';
 
 export const CLIENT_NAME_PATTERN = /^[a-z][a-z0-9-]{1,30}$/;
 
@@ -14,12 +20,14 @@ export interface ClientZipForm {
   name: string;
   shop_id: string;
   mcp_token: string;
+  clientMode: ClientMode;
   allowed_scenarios: string[];
   approval_threshold: number | undefined;
   require_human_confirmation: boolean;
   brand: { display_name: string };
   ui: ClientUiConfig;
   limits: ClientLimits;
+  messengers: Record<ClientMessengerPlatform, MessengerFormState>;
 }
 
 export function isPlaceholderSecret(value: string): boolean {
@@ -33,34 +41,62 @@ export function isPlaceholderSecret(value: string): boolean {
   );
 }
 
-function buildReadme(clientName: string, locale: Locale, customUi: boolean): string {
-  const instructions =
+function buildReadme(
+  clientName: string,
+  locale: Locale,
+  clientMode: ClientMode,
+  enabledMessengers: ClientMessengerPlatform[],
+): string {
+  const placement =
     locale === 'ru'
-      ? [
-          `# ${clientName}`,
-          '',
-          `1. Поместите папку \`${clientName}/\` в каталог \`clients/\` проекта.`,
-          '2. Запустите API командой `npm run start:api` и интерфейс командой `npm run dev`.',
-          `3. Откройте \`http://localhost:5173/?client=${clientName}\`.`,
-        ]
-      : [
-          `# ${clientName}`,
-          '',
-          `1. Place the \`${clientName}/\` folder in the project's \`clients/\` directory.`,
-          '2. Start the API with `npm run start:api` and the UI with `npm run dev`.',
-          `3. Open \`http://localhost:5173/?client=${clientName}\`.`,
-        ];
+      ? `1. Поместите папку \`${clientName}/\` в каталог \`clients/\` проекта.`
+      : `1. Place the \`${clientName}/\` folder in the project's \`clients/\` directory.`;
+  const instructionsByMode: Record<ClientMode, string[]> =
+    locale === 'ru'
+      ? {
+          'reference-ui': [
+            '2. Запустите API командой `npm run start:api` и интерфейс командой `npm run dev`.',
+            `3. Откройте \`http://localhost:5173/?client=${clientName}\`.`,
+          ],
+          'custom-ui': [
+            '2. Запустите API командой `npm run start:api`.',
+            '3. Разработайте собственный интерфейс и подключите его по контракту из `docs/api-contract.md`.',
+          ],
+          messengers: [
+            '2. Запустите API командой `npm run start:api`.',
+            '3. Запустите шлюз командой `npm run start --workspace=@alekstar79/ykassa-messenger`.',
+            `   В \`config.yaml\` включены: ${enabledMessengers.join(', ')}. Разрешённые ID пользователей также указаны в конфиге.`,
+            '   Если API и шлюз работают на разных узлах, задайте `API_BASE_URL` в окружении шлюза. Сейчас поддерживаются localhost и приватный IP.',
+          ],
+        }
+      : {
+          'reference-ui': [
+            '2. Start the API with `npm run start:api` and the UI with `npm run dev`.',
+            `3. Open \`http://localhost:5173/?client=${clientName}\`.`,
+          ],
+          'custom-ui': [
+            '2. Start the API with `npm run start:api`.',
+            '3. Build your own UI and connect it using the contract in `docs/api-contract.md`.',
+          ],
+          messengers: [
+            '2. Start the API with `npm run start:api`.',
+            '3. Start the gateway with `npm run start --workspace=@alekstar79/ykassa-messenger`.',
+            `   Enabled platforms: ${enabledMessengers.join(', ')}. Allowed user IDs are also in \`config.yaml\`.`,
+            '   If the API and gateway run on different hosts, set `API_BASE_URL` in the gateway environment. Only localhost and private IPs are currently supported.',
+          ],
+        };
+  const secretsWarning =
+    locale === 'ru'
+      ? 'Архив содержит секреты в `.env`. Храните его в безопасном месте и не коммитьте этот файл.'
+      : 'The archive contains secrets in `.env`. Store it securely and do not commit this file.';
+  const header = [`# ${clientName}`, '', placement];
 
-  if (customUi) {
-    instructions.push(
-      '',
-      locale === 'ru'
-        ? 'Ваш UI работает по контракту `/api/ask`, `/api/approve`, `/api/clients/:name/public`. См. `docs/api-contract.md`.'
-        : 'Your UI uses the `/api/ask`, `/api/approve`, and `/api/clients/:name/public` contracts. See `docs/api-contract.md`.',
-    );
-  }
-
-  return `${instructions.join('\n')}\n`;
+  return `${[
+    ...header,
+    ...instructionsByMode[clientMode],
+    '',
+    secretsWarning,
+  ].join('\n')}\n`;
 }
 
 function quoteEnvValue(value: string): string {
@@ -74,6 +110,22 @@ export async function buildClientZip(
   const clientName = form.name.trim();
   const shopId = form.shop_id.trim();
   const mcpToken = form.mcp_token.trim();
+  const messengers = {
+    telegram: {
+      enabled: form.messengers.telegram.enabled,
+      allowed_user_ids: parseAllowedUserIds(
+        form.messengers.telegram.allowed_user_ids_text,
+      ),
+      locale: form.messengers.telegram.locale,
+    },
+    max: {
+      enabled: form.messengers.max.enabled,
+      allowed_user_ids: parseAllowedUserIds(
+        form.messengers.max.allowed_user_ids_text,
+      ),
+      locale: form.messengers.max.locale,
+    },
+  };
 
   if (!CLIENT_NAME_PATTERN.test(clientName)) {
     throw new Error('Client name must be a lowercase slug.');
@@ -83,6 +135,27 @@ export async function buildClientZip(
   }
   if (!mcpToken || isPlaceholderSecret(mcpToken)) {
     throw new Error('MCP token is missing or is a placeholder.');
+  }
+
+  const enabledMessengers =
+    form.clientMode === 'messengers'
+      ? (['telegram', 'max'] as const).filter(
+          (platform) => form.messengers[platform].enabled,
+        )
+      : [];
+  if (form.clientMode === 'messengers' && enabledMessengers.length === 0) {
+    throw new Error('Enable at least one messenger platform.');
+  }
+
+  for (const platform of enabledMessengers) {
+    const messenger = form.messengers[platform];
+    const botToken = messenger.bot_token.trim();
+    if (!botToken || isPlaceholderSecret(botToken)) {
+      throw new Error(`${platform} bot token is missing or is a placeholder.`);
+    }
+    if (messengers[platform].allowed_user_ids.length === 0) {
+      throw new Error(`${platform} requires at least one allowed user ID.`);
+    }
   }
 
   const brand = {
@@ -96,8 +169,12 @@ export async function buildClientZip(
     require_human_confirmation: form.require_human_confirmation,
     limits: form.limits,
     defaults: DEFAULTS_BLOCK_FALLBACK,
-    ui: form.ui,
-    ...(form.ui.mode === 'reference-ui' && Object.keys(brand).length > 0
+    ui:
+      form.clientMode === 'reference-ui'
+        ? form.ui
+        : { mode: 'custom-ui' },
+    ...(form.clientMode === 'messengers' ? { messengers } : {}),
+    ...(form.clientMode === 'reference-ui' && Object.keys(brand).length > 0
       ? { brand }
       : {}),
   });
@@ -110,9 +187,8 @@ export async function buildClientZip(
   }
 
   const ui =
-    parsed.data.ui.mode === 'custom-ui'
-      ? { mode: 'custom-ui' as const }
-      : {
+    form.clientMode === 'reference-ui'
+      ? {
           mode: 'reference-ui' as const,
           accent: parsed.data.ui.accent,
           radius: parsed.data.ui.radius,
@@ -120,7 +196,8 @@ export async function buildClientZip(
           font_pair: parsed.data.ui.font_pair,
           form_style: parsed.data.ui.form_style,
           h1_size: parsed.data.ui.h1_size,
-        };
+        }
+      : { mode: 'custom-ui' as const };
   const config = {
     allowed_scenarios: parsed.data.allowed_scenarios,
     approval_threshold: parsed.data.approval_threshold,
@@ -130,8 +207,9 @@ export async function buildClientZip(
       max_attachment_kb: parsed.data.limits.max_attachment_kb,
     },
     defaults: { ...DEFAULTS_BLOCK_FALLBACK },
+    ...(form.clientMode === 'messengers' ? { messengers } : {}),
     ui,
-    ...(parsed.data.ui.mode === 'reference-ui' && Object.keys(brand).length > 0
+    ...(form.clientMode === 'reference-ui' && Object.keys(brand).length > 0
       ? { brand }
       : {}),
   };
@@ -143,6 +221,14 @@ export async function buildClientZip(
     envComment,
     `YOOKASSA_SHOP_ID=${quoteEnvValue(shopId)}`,
     `YOOKASSA_MCP_TOKEN=${quoteEnvValue(mcpToken)}`,
+    ...(form.clientMode === 'messengers' && messengers.telegram.enabled
+      ? [
+          `TELEGRAM_BOT_TOKEN=${quoteEnvValue(form.messengers.telegram.bot_token)}`,
+        ]
+      : []),
+    ...(form.clientMode === 'messengers' && messengers.max.enabled
+      ? [`MAX_BOT_TOKEN=${quoteEnvValue(form.messengers.max.bot_token)}`]
+      : []),
     '',
   ].join('\n');
 
@@ -156,7 +242,12 @@ export async function buildClientZip(
   clientFolder.file('.env', envFile);
   clientFolder.file(
     'README.md',
-    buildReadme(clientName, locale, parsed.data.ui.mode === 'custom-ui'),
+    buildReadme(
+      clientName,
+      locale,
+      form.clientMode,
+      enabledMessengers,
+    ),
   );
 
   return archive.generateAsync({ type: 'blob' });

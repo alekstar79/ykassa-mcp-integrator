@@ -23,6 +23,8 @@ export interface Messages {
   switchToDark: string;
   clientGroup: string;
   backendGroup: string;
+  messengersGroup: string;
+  messengersHint: string;
   uiGroup: string;
   nameLabel: string;
   nameHint: string;
@@ -32,6 +34,20 @@ export interface Messages {
   showMcpToken: string;
   hideMcpToken: string;
   secretHint: string;
+  archiveSecretsHint: string;
+  telegramTitle: string;
+  maxTitle: string;
+  telegramEnabledLabel: string;
+  maxEnabledLabel: string;
+  telegramBotTokenLabel: string;
+  maxBotTokenLabel: string;
+  showMessengerToken: string;
+  hideMessengerToken: string;
+  allowedUserIdsLabel: string;
+  allowedUserIdsHint: string;
+  messengerLocaleLabel: string;
+  localeRu: string;
+  localeEn: string;
   scenarioLabel: string;
   scenarioHint: string;
   approvalThresholdLabel: string;
@@ -46,6 +62,7 @@ export interface Messages {
   modeHint: string;
   referenceMode: string;
   customMode: string;
+  messengerMode: string;
   displayNameLabel: string;
   displayNameHint: string;
   accentLabel: string;
@@ -72,6 +89,10 @@ export interface Messages {
     shopIdPlaceholder: string;
     mcpTokenRequired: string;
     mcpTokenPlaceholder: string;
+    messengerTokenRequired: string;
+    messengerTokenPlaceholder: string;
+    messengerAllowlistRequired: string;
+    messengerRequired: string;
     scenariosRequired: string;
     approvalThreshold: string;
     requireHumanConfirmation: string;
@@ -106,7 +127,10 @@ export const translations = {
     switchToDark: 'Тёмная тема',
     clientGroup: 'Клиент',
     backendGroup: 'Backend',
-    uiGroup: 'Интерфейс',
+    messengersGroup: 'Мессенджеры',
+    messengersHint:
+      'Для работающего бота укажите токен и хотя бы один разрешённый ID пользователя. Пустой список запрещает доступ всем.',
+    uiGroup: 'Профиль клиента',
     nameLabel: 'Имя клиента',
     nameHint:
       'Только строчная латиница, цифры и дефис. Пример: online-school.',
@@ -115,7 +139,23 @@ export const translations = {
     mcpTokenLabel: 'MCP-токен',
     showMcpToken: 'Показать MCP-токен',
     hideMcpToken: 'Скрыть MCP-токен',
-    secretHint: 'Хранится только в .env, не в config.yaml.',
+    secretHint: 'Хранится в .env, отдельно от config.yaml.',
+    archiveSecretsHint:
+      'Скачиваемый архив содержит секреты в .env. Храните его безопасно и не коммитьте .env.',
+    telegramTitle: 'Telegram',
+    maxTitle: 'MAX',
+    telegramEnabledLabel: 'Включить Telegram',
+    maxEnabledLabel: 'Включить MAX',
+    telegramBotTokenLabel: 'Токен Telegram-бота',
+    maxBotTokenLabel: 'Токен MAX-бота',
+    showMessengerToken: 'Показать токен',
+    hideMessengerToken: 'Скрыть токен',
+    allowedUserIdsLabel: 'Разрешённые ID пользователей',
+    allowedUserIdsHint:
+      'Один ID отправителя на строку. Доступ по умолчанию запрещён.',
+    messengerLocaleLabel: 'Язык ответов бота',
+    localeRu: 'Русский',
+    localeEn: 'Английский',
     scenarioLabel: 'Разрешённые сценарии',
     scenarioHint: 'Выберите хотя бы один доступный MCP-инструмент.',
     approvalThresholdLabel: 'Порог подтверждения',
@@ -129,10 +169,12 @@ export const translations = {
     maxAttachmentLabel: 'Максимальный размер вложения (КБ)',
     maxAttachmentHint:
       'Целое число от {min} до {max} КБ. По умолчанию: {default} КБ.',
-    modeLabel: 'Режим интерфейса',
-    modeHint: 'Выберите reference UI или собственный интерфейс.',
+    modeLabel: 'Тип клиентского приложения',
+    modeHint:
+      'Выберите один вариант. Для другого интерфейса создайте отдельного клиента.',
     referenceMode: 'Reference UI',
-    customMode: 'Собственный UI',
+    customMode: 'Собственный UI (только API)',
+    messengerMode: 'Мессенджер(ы)',
     displayNameLabel: 'Название сервиса',
     displayNameHint: 'Название в шапке reference UI.',
     accentLabel: 'Акцентный цвет',
@@ -148,7 +190,7 @@ export const translations = {
     h1SizeLabel: 'Размер заголовка',
     h1SizeHint: 'Размер основного заголовка.',
     customUiContract:
-      'Ваш UI работает по контракту /api/ask, /api/approve, /api/clients/:name/public. См. docs/api-contract.md.',
+      'Интерфейс не входит в архив. Запускается только API. Разработайте свой UI по контракту из docs/api-contract.md.',
     downloadButton: 'Скачать',
     downloadPreparing: 'Готовим архив…',
     downloadError: 'Не удалось сформировать архив.',
@@ -160,6 +202,13 @@ export const translations = {
       shopIdPlaceholder: 'Замените значение-плейсхолдер на настоящий Shop ID.',
       mcpTokenRequired: 'Укажите MCP-токен.',
       mcpTokenPlaceholder: 'Замените значение-плейсхолдер на настоящий токен.',
+      messengerTokenRequired: 'Укажите токен включённого бота.',
+      messengerTokenPlaceholder:
+        'Замените значение-плейсхолдер на настоящий токен бота.',
+      messengerAllowlistRequired:
+        'Добавьте хотя бы один ID пользователя для включённого бота.',
+      messengerRequired:
+        'Включите Telegram или MAX для клиентского приложения типа «Мессенджер(ы)».',
       scenariosRequired: 'Выберите хотя бы один сценарий.',
       approvalThreshold: 'Укажите число не меньше 0.',
       requireHumanConfirmation: 'Укажите, нужно ли подтверждать операции.',
@@ -192,7 +241,10 @@ export const translations = {
     switchToDark: 'Dark theme',
     clientGroup: 'Client',
     backendGroup: 'Backend',
-    uiGroup: 'UI',
+    messengersGroup: 'Messengers',
+    messengersHint:
+      'For a working bot, enter its token and at least one allowed user ID. An empty list denies access to everyone.',
+    uiGroup: 'Client profile',
     nameLabel: 'Client name',
     nameHint:
       'Lowercase Latin letters, digits, and hyphens only. Example: online-school.',
@@ -201,7 +253,23 @@ export const translations = {
     mcpTokenLabel: 'MCP token',
     showMcpToken: 'Show MCP token',
     hideMcpToken: 'Hide MCP token',
-    secretHint: 'Stored only in .env, never in config.yaml.',
+    secretHint: 'Stored in .env, separate from config.yaml.',
+    archiveSecretsHint:
+      'The downloaded archive contains secrets in .env. Store it securely and do not commit .env.',
+    telegramTitle: 'Telegram',
+    maxTitle: 'MAX',
+    telegramEnabledLabel: 'Enable Telegram',
+    maxEnabledLabel: 'Enable MAX',
+    telegramBotTokenLabel: 'Telegram bot token',
+    maxBotTokenLabel: 'MAX bot token',
+    showMessengerToken: 'Show token',
+    hideMessengerToken: 'Hide token',
+    allowedUserIdsLabel: 'Allowed user IDs',
+    allowedUserIdsHint:
+      'One sender ID per line. Access is denied by default.',
+    messengerLocaleLabel: 'Bot response language',
+    localeRu: 'Russian',
+    localeEn: 'English',
     scenarioLabel: 'Allowed scenarios',
     scenarioHint: 'Select at least one available MCP tool.',
     approvalThresholdLabel: 'Approval threshold',
@@ -215,10 +283,12 @@ export const translations = {
     maxAttachmentLabel: 'Maximum attachment size (KB)',
     maxAttachmentHint:
       'Whole number from {min} to {max} KB. Default: {default} KB.',
-    modeLabel: 'UI mode',
-    modeHint: 'Choose the reference UI or your own interface.',
+    modeLabel: 'Client application type',
+    modeHint:
+      'Choose one option. Create another client for a different interface.',
     referenceMode: 'Reference UI',
-    customMode: 'Custom UI',
+    customMode: 'Custom UI (API only)',
+    messengerMode: 'Messenger(s)',
     displayNameLabel: 'Service name',
     displayNameHint: 'Name shown in the reference UI header.',
     accentLabel: 'Accent color',
@@ -234,7 +304,7 @@ export const translations = {
     h1SizeLabel: 'Heading size',
     h1SizeHint: 'Main heading size.',
     customUiContract:
-      'Your UI uses the /api/ask, /api/approve, and /api/clients/:name/public contracts. See docs/api-contract.md.',
+      'The archive includes no UI, only the API. Build your own UI using the contract in docs/api-contract.md.',
     downloadButton: 'Download',
     downloadPreparing: 'Preparing archive…',
     downloadError: 'Could not generate archive.',
@@ -246,6 +316,12 @@ export const translations = {
       shopIdPlaceholder: 'Replace the placeholder with a real Shop ID.',
       mcpTokenRequired: 'Enter the MCP token.',
       mcpTokenPlaceholder: 'Replace the placeholder with a real token.',
+      messengerTokenRequired: 'Enter the enabled bot token.',
+      messengerTokenPlaceholder: 'Replace the placeholder with a real bot token.',
+      messengerAllowlistRequired:
+        'Add at least one user ID for the enabled bot.',
+      messengerRequired:
+        'Enable Telegram or MAX for the Messenger(s) client type.',
       scenariosRequired: 'Select at least one scenario.',
       approvalThreshold: 'Enter a number greater than or equal to 0.',
       requireHumanConfirmation: 'Choose whether operations require confirmation.',

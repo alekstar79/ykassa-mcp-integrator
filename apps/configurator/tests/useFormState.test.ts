@@ -16,12 +16,27 @@ describe('useFormState', () => {
       name: '',
       shop_id: '',
       mcp_token: '',
+      clientMode: 'reference-ui',
       allowed_scenarios: [],
       approval_threshold: 0,
       require_human_confirmation: false,
       brand: { display_name: '' },
       ui: CLIENT_CONFIG_DEFAULTS.ui,
       limits: CLIENT_CONFIG_DEFAULTS.limits,
+      messengers: {
+        telegram: {
+          enabled: false,
+          allowed_user_ids_text: '',
+          locale: CLIENT_CONFIG_DEFAULTS.messengers.telegram.locale,
+          bot_token: '',
+        },
+        max: {
+          enabled: false,
+          allowed_user_ids_text: '',
+          locale: CLIENT_CONFIG_DEFAULTS.messengers.max.locale,
+          bot_token: '',
+        },
+      },
     });
     expect(hasApprovalThreshold.value).toBe(false);
   });

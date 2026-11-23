@@ -13,12 +13,27 @@ function validForm(): Ref<FormState> {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-mcp-token-123456',
+    clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,
     require_human_confirmation: false,
     brand: { display_name: 'Online School' },
     ui: { ...CLIENT_CONFIG_DEFAULTS.ui },
     limits: { ...CLIENT_CONFIG_DEFAULTS.limits },
+    messengers: {
+      telegram: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+      max: {
+        enabled: false,
+        allowed_user_ids_text: '',
+        locale: 'ru',
+        bot_token: '',
+      },
+    },
   });
 }
 
@@ -119,5 +134,49 @@ describe('useValidation', () => {
       translations.ru.errors.mcpTokenPlaceholder,
     );
     expect(validation.isFormValid.value).toBe(false);
+  });
+
+  it('validates messenger credentials only for the messenger client type', () => {
+    const form = validForm();
+    const validation = createValidation(form);
+
+    expect(validation.isFormValid.value).toBe(true);
+
+    form.value.messengers.telegram.enabled = true;
+    expect(validation.isFormValid.value).toBe(true);
+
+    form.value.clientMode = 'messengers';
+    expect(validation.errorFor('clientMode')).toBeUndefined();
+    expect(validation.errorFor('messengers.telegram.bot_token')).toBe(
+      translations.ru.errors.messengerTokenRequired,
+    );
+    expect(
+      validation.errorFor('messengers.telegram.allowed_user_ids_text'),
+    ).toBe(translations.ru.errors.messengerAllowlistRequired);
+
+    form.value.messengers.telegram.bot_token = 'telegram-token-123';
+    form.value.messengers.telegram.allowed_user_ids_text = '101\n202';
+    expect(validation.errorFor('messengers.telegram.bot_token')).toBeUndefined();
+    expect(
+      validation.errorFor('messengers.telegram.allowed_user_ids_text'),
+    ).toBeUndefined();
+
+    form.value.messengers.telegram.bot_token = 'your-bot-token';
+    expect(validation.errorFor('messengers.telegram.bot_token')).toBe(
+      translations.ru.errors.messengerTokenPlaceholder,
+    );
+  });
+
+  it('requires at least one enabled messenger only for the messenger client type', () => {
+    const form = validForm();
+    const validation = createValidation(form);
+
+    form.value.clientMode = 'messengers';
+    expect(validation.errorFor('clientMode')).toBe(
+      translations.ru.errors.messengerRequired,
+    );
+
+    form.value.messengers.telegram.enabled = true;
+    expect(validation.errorFor('clientMode')).toBeUndefined();
   });
 });
