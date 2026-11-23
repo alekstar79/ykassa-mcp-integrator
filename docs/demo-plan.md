@@ -5,6 +5,10 @@ screen-share. Use the test shop only. Keep every requested payment at 100 RUB,
 review approval prompts explicitly, and never complete checkout or enter
 payment credentials.
 
+This run-of-show covers the Reference UI. For Telegram setup, bot commands,
+and messenger-specific E2E scenarios, use
+[`apps/messenger/README.md`](../apps/messenger/README.md).
+
 ## Run of show
 
 | Time      | Segment                   | Presenter notes                                                                                                                                                                                  | Screen                                        |

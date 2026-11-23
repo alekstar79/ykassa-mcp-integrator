@@ -13,7 +13,7 @@
 
 The service accepts natural-language requests, selects an available YooKassa
 MCP tool, and validates the operation before execution. Requests can be sent
-through the reference UI or the headless HTTP API.
+through the reference UI, Messenger Gateway (Telegram or MAX), or headless HTTP API.
 
 - **LLM orchestration:** the model maps requests to available tools.
 - **Human approval:** risky operations wait for an explicit decision.
@@ -29,15 +29,18 @@ npx @alekstar79/ykassa-mcp init my-client
 npx @alekstar79/ykassa-mcp start
 npx @alekstar79/ykassa-mcp web
 npx @alekstar79/ykassa-mcp configurator
+npx @alekstar79/ykassa-mcp messenger
 npx @alekstar79/ykassa-mcp --help
 ```
 
-`start` and `web` / `configurator` run in **separate terminals** (or `start` in the background). Open the reference UI with `?client=<name>`; without it the UI falls back to `online-school`:
+`start`, `messenger`, and the web interfaces run in **separate terminals** (or run the API in the background). Open the reference UI with `?client=<name>`; without it the UI falls back to `online-school`:
 
 ```bash
 # terminal 1
 npx @alekstar79/ykassa-mcp start
 # terminal 2
+npx @alekstar79/ykassa-mcp messenger
+# terminal 3
 npx @alekstar79/ykassa-mcp web
 # browser: http://127.0.0.1:5173/?client=my-client
 ```
@@ -99,14 +102,20 @@ through the HTTP contract and the `config.yaml` format.
 
 ```mermaid
 flowchart LR
-    Manager[Manager] --> UI[Vue UI]
-    UI -->|HTTP| API[Express API]
-    API -->|MCP| YooKassa[YooKassa MCP]
-    API --> LLM[LLM provider]
+    Manager[Manager] <-->|request / result / approval| UI[Vue UI]
+    UI <-->|ask / approve HTTP| API[Express API]
+    Manager <-->|messages / cards| Telegram[Telegram Bot API]
+    Telegram <-->|long polling| Messenger[Messenger Gateway]
+    Manager <-->|messages / cards| MAX[MAX Bot API]
+    MAX <-->|long polling| Messenger
+    Messenger <-->|ask / approve HTTP| API
+    API <-->|tools / results| YooKassa[YooKassa MCP]
+    API <-->|chat / tool calls| LLM[LLM provider]
     API --> Audit["logs/mcp-calls.jsonl"]
+    Messenger --> MessengerAudit["logs/messenger-actions.jsonl"]
 ```
 
-Interactive version of this diagram — [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html). Click on a node to open its Semantic passport: purpose, connections, data flows. Useful for tracing a request from the manager to MCP and seeing where human-in-the-loop kicks in.
+Interactive map — [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html). It shows the core API, Reference UI, and Messenger Gateway components. Click a node to open its Semantic passport with its purpose, connections, and data flows.
 
 Project presentation (10 slides): [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html). Headless API overview, architecture without shared imports, `/api/ask → /api/approve` flow, three endpoints for a custom UI, MCP tools and policy, LLM providers, audit and metrics.
 
@@ -116,7 +125,12 @@ Project presentation (10 slides): [presentation.html](https://alekstar79.github.
 - `apps/web` is the Vue 3 reference UI. Replace it with a custom client using
   `docs/api-contract.md`.
 - `apps/configurator` is a web configurator that creates a client archive
-  containing `config.yaml`, `.env`, and `README.md`.
+  containing `config.yaml`, `.env`, and `README.md`, including Telegram/MAX
+  settings and enabled bot tokens. The archive contains secrets: store it
+  securely and do not commit `.env`.
+- `apps/messenger` is an independent Telegram and MAX gateway. It uses the API
+  HTTP contract, checks sender allowlists, and presents approval cards. LLM and
+  MCP logic remain in the API.
 - `apps/cli` (`@alekstar79/ykassa-mcp`) provides commands to initialize a
   client, start the API, and serve client interfaces.
 - `packages/contracts` (`@alekstar79/ykassa-contracts`) provides shared
@@ -124,7 +138,25 @@ Project presentation (10 slides): [presentation.html](https://alekstar79.github.
 
 Removing `apps/web` does not affect the API. YooKassa integration goes
 through MCP; the API retrieves the available tools using `tools/list` for
-each request.
+each request. Start the API and Messenger Gateway in separate terminals. See
+the [Messenger guide](apps/messenger/README.md) for bot setup, allowlists, MAX
+limitations, E2E testing, and chat commands. MAX uses long polling for
+development and testing only; production requires webhooks, which are not
+implemented yet.
+
+### Bot commands
+
+Commands work in an authorized private chat:
+
+- `/start` sends the welcome message. Unknown sender IDs are denied so the
+  operator can add them to the allowlist.
+- `/help` shows the command list and request guidance.
+- `/status` shows the client brand and allowed MCP scenarios.
+- `/reset` clears in-memory conversation history. It does not cancel a pending
+  approval; use the buttons on that approval card.
+
+Approve or reject a risky operation with the buttons on its Telegram or MAX
+approval card. A chat message such as “yes” does not approve it.
 
 ## MCP tools
 
@@ -152,11 +184,13 @@ are not part of the official tool set.
 
 ## Operation approval
 
-`create_payment` operations above `approval_threshold`, or all payments when
-`require_human_confirmation: true`, are not executed automatically. The LLM
-proposes an operation, and a person approves or rejects it through
-`/api/approve`. After approval, the API revalidates the operation against the
-current client configuration, live `tools/list`, and `allowed_scenarios`.
+`create_payment` above `approval_threshold`, `create_invoice` above that
+threshold or with an unknown total, and either operation when
+`require_human_confirmation: true` are not executed automatically. A person
+approves or rejects the proposal through the reference UI or a Telegram/MAX
+card, which calls `/api/approve`. After approval, the API revalidates the
+operation against the current client configuration, live `tools/list`, and
+`allowed_scenarios`.
 
 ## LLM providers
 
@@ -247,6 +281,7 @@ restrict access to it.
 - [Contributor guide](CONTRIBUTING.md)
 - [Instructions for AI agents](AGENTS.md)
 - [Architecture](docs/architecture.md)
+- [Messenger Gateway and chat commands](apps/messenger/README.md)
 - [HTTP contract](docs/api-contract.md)
 - [Local LLM proxy setup](docs/copilot-proxy.md)
 - [MIT License](LICENSE)

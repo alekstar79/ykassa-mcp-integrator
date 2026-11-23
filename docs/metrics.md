@@ -1,32 +1,20 @@
 # Demo metrics
 
-## Timings
+## Verified outcomes
 
-| Scenario                  | Manual estimate | Measured system or script time | Configurator estimate | Note                        |
-|---------------------------|----------------:|-------------------------------:|----------------------:|-----------------------------|
-| Create one payment link   |           ~45 s |                          2.3 s |                   n/a | One successful agent run    |
-| Create five payment links |          ~4 min |                        11.05 s |                   n/a | All five links were created |
-| Onboard a client          |        ~3–5 min |    ~10 s (`onboard-client.ts`) |              ~1–2 min | Script time is approximate  |
+| Scenario | Before | With the agent | Evidence |
+|---|---|---|---|
+| Process a five-row CSV in MAX | No comparable baseline run recorded | One chat request was used to read five student rows | Live MAX E2E, 2026-11-23 |
+| Create five payment links | No comparable baseline run recorded | Five `create_payment` calls succeeded at 100 RUB each; links were not opened or paid | Live MAX E2E and `logs/mcp-calls.jsonl`, 2026-11-23 |
 
-## How we collected the results
+These are observed outcomes, not time or conversion-rate measurements. The
+manual baseline was not recorded under comparable conditions.
 
-On December 5, 2026, we tested one 100 RUB payment link and a request for
-five links at 100 RUB each in the test shop. The `gpt-4o` run went through the
-reference UI, API, LLM, YooKassa MCP, and back to the UI. The five-link
-request created all five links.
+## Timing
 
-That run used the pipeline as it existed on December 5, before
-`enrichToolCall` and Ajv JSON Schema validation were added.
-
-On December 6, a new run with the local `qwen2.5:7b-instruct` model reached
-YooKassa MCP, but the store rejected the RUB currency. No link was created,
-so that failed run is not included in the timing table.
-
-The manual times are estimates, not stopwatch results. They describe creating
-links in the YooKassa dashboard. The Configurator estimate includes filling
-in the form, downloading the archive, and copying it to `clients/<name>/`.
-The `onboard-client.ts` time is an approximate script run.
-
-The script is for operators who use a terminal. The Configurator is for
-service owners who prefer a web interface. The API reads client settings for
-each request, so adding a client does not require an API restart.
+No verified timing comparison is available. Earlier timing values were tied to
+source notes dated December 5–6, 2026, which are later than the review date,
+November 23, 2026. Those values and unmeasured manual/configurator estimates
+have been removed rather than presented as results. Collect new timings with
+dated source logs and a defined repeat count before making a performance
+comparison.

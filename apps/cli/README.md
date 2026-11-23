@@ -21,6 +21,7 @@ ykassa-mcp init <name>
 ykassa-mcp start
 ykassa-mcp web
 ykassa-mcp configurator
+ykassa-mcp messenger
 ykassa-mcp --help
 ykassa-mcp --version
 ```
@@ -29,5 +30,7 @@ ykassa-mcp --version
 - `start` runs the API server.
 - `web` serves the reference UI on port 5173.
 - `configurator` serves the client configurator on port 5174.
+- `messenger` starts the configured Telegram and MAX clients. Run it from the
+  project directory containing `clients/` and `.env`, separately from `start`.
 
 Run project commands from the project directory containing `clients/` and `.env`.

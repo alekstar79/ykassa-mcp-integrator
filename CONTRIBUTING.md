@@ -31,6 +31,7 @@ Fill `YOOKASSA_SHOP_ID` and `YOOKASSA_MCP_TOKEN` in
 
 - `apps/api`: headless Express API, MCP client, LLM providers, and approvals.
 - `apps/web`: Vue 3 reference UI.
+- `apps/messenger`: independent Telegram and MAX gateway that calls the API over HTTP.
 - `apps/configurator`: client configuration and zip export UI.
 - `apps/cli`: command-line package and bundled UI assets.
 - `packages/contracts`: shared types, schemas, and UI values.
@@ -46,10 +47,14 @@ Run each service in a separate terminal:
 npm run start:api
 npm run dev
 npm run dev:configurator
+npm run start --workspace=@alekstar79/ykassa-messenger
 ```
 
-The API listens on port 3000, the reference UI on port 5173, and the
-configurator on port 5174.
+Run services in separate terminals. The API listens on port 3000, the
+reference UI on port 5173, and the configurator on port 5174. The Messenger
+workspace starts enabled Telegram and MAX clients. For a built install, use
+`npx @alekstar79/ykassa-mcp messenger`. See
+`apps/messenger/README.md` for bot setup and chat commands.
 
 **Local LLM development.** If you don't have an API key from OpenAI, Anthropic, or Google, you can run a local OpenAI-compatible proxy to GitHub Copilot. See `docs/copilot-proxy.md` for setup and risks. This is a development-only option, not for production.
 
@@ -63,8 +68,8 @@ npm run test:watch
 npm run test:coverage
 ```
 
-The suite contains 103 tests: 58 API behavior tests, 1 API library-export
-test, 31 configurator tests, 11 web tests, and 2 contracts tests.
+The suite includes API, Messenger, Configurator, Web, and Contracts tests.
+Run `npm test` from the repository root to execute all workspace suites.
 
 ## Building packages
 
@@ -72,8 +77,8 @@ test, 31 configurator tests, 11 web tests, and 2 contracts tests.
 npm run build:packages
 ```
 
-This builds contracts, API, reference UI, and configurator, then copies the
-UI assets and client template into `apps/cli/` using
+This builds contracts, API, Messenger, reference UI, and configurator, then
+copies the UI assets and client template into `apps/cli/` using
 `scripts/sync-templates.mjs`.
 
 ## Adding a client
@@ -88,6 +93,10 @@ cp clients/my-client/.env.example clients/my-client/.env
 Edit `clients/my-client/config.yaml`, set the shop ID and MCP token in
 `clients/my-client/.env`, then open
 `http://localhost:5173/?client=my-client`.
+
+To connect a Telegram bot, configure the client's `messengers.telegram`
+settings and `TELEGRAM_BOT_TOKEN`, then follow
+`apps/messenger/README.md`. The gateway is started separately from the API.
 
 ## Code style
 

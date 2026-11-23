@@ -1,7 +1,7 @@
 # HTTP API contract
 
-The reference UI and independently built clients communicate with the API over
-HTTP. Set the API base URL to the deployment origin. JSON requests use
+The reference UI, Messenger gateway, and independently built clients communicate
+with the API over HTTP. Set the API base URL to the deployment origin. JSON requests use
 `Content-Type: application/json`.
 
 ## `POST /api/ask`
@@ -81,9 +81,18 @@ For backwards compatibility, callers may instead send `client`, `amount`, and
 }
 ```
 
+For an explicit payment or invoice creation request where the model asks for
+text confirmation instead of calling a tool, the API retries once with only
+the matching creation tool required. A valid proposal is returned as `202`
+without executing the operation, so the approval card is the confirmation
+step even when the amount is below the configured threshold.
+
 Errors use a JSON object with an `error` string. `400` indicates an invalid
 request, `404` a missing client configuration, `413` a request exceeding the
-HTTP body size limit, and `500` a configuration or server failure.
+HTTP body size limit, `500` a configuration or server failure, and `503` a
+failed recovery when the API cannot turn a text-only confirmation request into
+a valid creation proposal. This can happen when the provider cannot require a
+tool call or returns an invalid proposal. No operation is executed.
 
 ### Example
 
@@ -124,9 +133,10 @@ can be resolved only once and expires after 15 minutes.
 continued operation requires another explicit approval.
 
 Errors use a JSON object with an `error` string. `400` indicates a malformed
-request, `404` an unknown or already resolved approval, `410` an expired
-approval, `413` a request exceeding the HTTP body size limit, and `500` a
-configuration or server failure.
+request, `404` an unknown or already resolved approval, `409` an operation no
+longer allowed by the current client configuration or MCP tool list, `410` an
+expired approval, `413` a request exceeding the HTTP body size limit, and
+`500` a configuration or server failure.
 
 ### Example
 
