@@ -267,7 +267,9 @@ export class MaxAdapter {
       });
     } catch (error) {
       if (isAbortError(error)) throw error;
-      throw new Error('MAX API request failed.');
+      throw new Error(
+        `MAX API request failed (${safeRequestErrorMessage(error)})`,
+      );
     }
     if (!response.ok) {
       if (response.status === 429) {
@@ -596,6 +598,15 @@ function safeErrorName(error: unknown): string {
 
 function safeErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
+}
+
+function safeRequestErrorMessage(error: unknown): string {
+  const name = safeErrorName(error);
+  const cause = error instanceof Error ? asRecord(error.cause) : undefined;
+  const code = cause?.code;
+  return typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code)
+    ? `${name}; cause ${code}`
+    : name;
 }
 
 function delay(milliseconds: number, signal: AbortSignal): Promise<void> {

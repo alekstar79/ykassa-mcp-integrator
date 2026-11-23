@@ -275,6 +275,32 @@ describe('MAX transport', () => {
     );
   });
 
+  it('logs a safe network error code when long polling cannot connect', async () => {
+    const networkCause = Object.assign(new Error('DNS lookup failed'), {
+      code: 'ENOTFOUND',
+    });
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(
+        new TypeError('request failed with secret-token', {
+          cause: networkCause,
+        }),
+      );
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const adapter = new MaxAdapter('secret-token', { fetcher });
+
+    await adapter.start(async () => {}, async () => {});
+
+    await vi.waitFor(() => {
+      expect(logError).toHaveBeenCalledWith(
+        'MAX long polling failed (MAX API request failed (TypeError; cause ENOTFOUND)).',
+      );
+    });
+    expect(logError.mock.calls.flat().join(' ')).not.toContain('secret-token');
+
+    await adapter.stop();
+  });
+
   it('polls messages and callbacks, advances the marker, and stops cleanly', async () => {
     const pollUrls: URL[] = [];
     const downloadedFiles: URL[] = [];

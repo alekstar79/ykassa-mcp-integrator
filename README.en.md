@@ -139,10 +139,9 @@ Project presentation (10 slides): [presentation.html](https://alekstar79.github.
 Removing `apps/web` does not affect the API. YooKassa integration goes
 through MCP; the API retrieves the available tools using `tools/list` for
 each request. Start the API and Messenger Gateway in separate terminals. See
-the [Messenger guide](apps/messenger/README.md) for bot setup, allowlists, MAX
-limitations, E2E testing, and chat commands. MAX uses long polling for
-development and testing only; production requires webhooks, which are not
-implemented yet.
+the [Messenger guide](apps/messenger/README.md) for bot setup, allowlists, and
+chat commands. MAX uses long polling for development and testing; webhook
+delivery is not implemented.
 
 ### Bot commands
 

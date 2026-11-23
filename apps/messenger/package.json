@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-messenger",
   "description": "Standalone Telegram and MAX gateway for the YooKassa MCP integrator.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "MIT",
   "type": "module",
   "private": false,
@@ -56,7 +56,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@alekstar79/ykassa-contracts": "^1.1.0",
+    "@alekstar79/ykassa-contracts": "^1.1.1",
     "dotenv": "^18.0.10",
     "grammy": "^1.48.0",
     "js-yaml": "^5.5.0"

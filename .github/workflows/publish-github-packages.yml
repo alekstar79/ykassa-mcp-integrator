@@ -7,9 +7,14 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Version tag to publish, for example v1.1.0
+        description: Version tag to publish and release, for example v1.1.1
         required: true
         type: string
+      release_only:
+        description: Create the GitHub Release without republishing packages
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -17,6 +22,7 @@ permissions:
 
 jobs:
   publish:
+    if: ${{ inputs.release_only != true }}
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
@@ -28,7 +34,7 @@ jobs:
       - name: Require a version tag
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Expected a release tag such as v1.1.0, got '$RELEASE_TAG'."
+            echo "::error::Expected a release tag such as v1.1.1, got '$RELEASE_TAG'."
             exit 1
           fi
           expected="${RELEASE_TAG#v}"
@@ -84,3 +90,32 @@ jobs:
         run: npm publish --workspace=@alekstar79/ykassa-mcp --registry=https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create_release:
+    needs: publish
+    if: ${{ always() && (inputs.release_only == true || needs.publish.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Require a version tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected a release tag such as v1.1.1, got '$RELEASE_TAG'."
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub Release '$RELEASE_TAG' already exists."
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --generate-notes

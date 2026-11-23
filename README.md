@@ -26,9 +26,9 @@ CLI через `npx`:
 
 ```bash
 npx @alekstar79/ykassa-mcp init my-client
+npx @alekstar79/ykassa-mcp configurator
 npx @alekstar79/ykassa-mcp start
 npx @alekstar79/ykassa-mcp web
-npx @alekstar79/ykassa-mcp configurator
 npx @alekstar79/ykassa-mcp messenger
 npx @alekstar79/ykassa-mcp --help
 ```
@@ -137,10 +137,9 @@ flowchart LR
 Удаление `apps/web` не влияет на API. Интеграция с YooKassa выполняется через
 MCP; при каждом запросе API получает список инструментов через `tools/list`.
 Запусти API и Messenger Gateway в отдельных терминалах. Настройка ботов,
-allowlist, ограничения MAX, запуск E2E и команды чата описаны в
-[руководстве Messenger](apps/messenger/README.md). MAX использует long polling
-только для разработки и тестирования; для production нужен webhook, который
-пока не реализован.
+allowlist и команды чата описаны в [руководстве Messenger](apps/messenger/README.md).
+MAX использует long polling для разработки и тестирования; webhook для
+production пока не реализован.
 
 ### Команды ботов
 

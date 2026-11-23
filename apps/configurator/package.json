@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-configurator",
   "description": "Web configurator for the YooKassa MCP integrator. Generates config.yaml, .env and README.md as a downloadable zip. Built into @alekstar79/ykassa-mcp as static assets.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "MIT",
   "type": "module",
   "private": true,
@@ -23,7 +23,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@alekstar79/ykassa-contracts": "^1.1.0",
+    "@alekstar79/ykassa-contracts": "^1.1.1",
     "js-yaml": "^5.5.0",
     "jszip": "^3.10.1",
     "vue": "^3.5.45"
