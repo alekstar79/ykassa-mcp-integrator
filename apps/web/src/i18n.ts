@@ -1,15 +1,33 @@
 export type Locale = 'ru' | 'en';
 
 export interface Messages {
+  locale: Locale;
   documentTitle: string;
   title: string;
   languageSwitcher: string;
   switchToLight: string;
   switchToDark: string;
   loadingClient: string;
-  clientNotFound: string;
+  clientListError: string;
+  clientConfigError: string;
+  clientSelectionTitle: string;
+  clientSelectionPrompt: string;
+  noConfiguredClients: string;
+  retryClientLoad: string;
+  backToClientSelection: string;
   requestSection: string;
   resultsSection: string;
+  chatHistory: string;
+  emptyChat: string;
+  loadingHistory: string;
+  historyLoadError: string;
+  retryHistory: string;
+  userLabel: string;
+  assistantLabel: string;
+  processing: string;
+  historyNavigation: string;
+  chatHistoryScrollbar: string;
+  jumpToRequest: string;
   requestLabel: string;
   requestPlaceholder: string;
   removeFile: string;
@@ -54,10 +72,14 @@ export interface Messages {
   paymentRejected: string;
   responseTitle: string;
   toolCallsTitle: string;
-  arguments: string;
-  responseDetails: string;
+  paymentOperation: string;
+  invoiceOperation: string;
+  approvalAmount: string;
+  approvalPurpose: string;
+  paymentLinkReady: string;
+  invoiceLinkReady: string;
+  openInvoice: string;
   pay: string;
-  missingResult: string;
   approvalLabel: string;
   approvalTitle: string;
   safeActions: string;
@@ -73,15 +95,34 @@ export interface Messages {
 
 export const translations: Record<Locale, Messages> = {
   ru: {
+    locale: 'ru',
     documentTitle: 'YooKassa · Менеджер платежей',
     title: 'Менеджер платежей',
     languageSwitcher: 'Выбрать язык',
     switchToLight: 'Включить светлую тему',
     switchToDark: 'Включить тёмную тему',
     loadingClient: 'Загружаем настройки клиента…',
-    clientNotFound: 'Не удалось загрузить настройки клиента.',
+    clientListError: 'Не удалось загрузить список магазинов и сервисов.',
+    clientConfigError: 'Не удалось загрузить настройки выбранного сервиса.',
+    clientSelectionTitle: 'Выберите магазин или сервис',
+    clientSelectionPrompt: 'К какому клиенту подключиться?',
+    noConfiguredClients:
+      'Настроенные магазины и сервисы не найдены. Добавьте клиента в каталог clients/.',
+    retryClientLoad: 'Повторить',
+    backToClientSelection: 'Выбрать другой сервис',
     requestSection: 'Форма запроса',
     resultsSection: 'Результаты работы',
+    chatHistory: 'История чата',
+    emptyChat: 'Задайте первый вопрос, чтобы начать диалог.',
+    loadingHistory: 'Загружаем историю диалога…',
+    historyLoadError: 'Не удалось загрузить историю диалога.',
+    retryHistory: 'Повторить',
+    userLabel: 'Вы',
+    assistantLabel: 'Ассистент',
+    processing: 'Обрабатываем запрос…',
+    historyNavigation: 'Навигация по запросам',
+    chatHistoryScrollbar: 'Прокрутка истории чата',
+    jumpToRequest: 'Перейти к запросу',
     requestLabel: 'Что нужно сделать',
     requestPlaceholder: 'Например: выставь счёт на 5 000 ₽ за курс английского',
     removeFile: 'Удалить файл',
@@ -124,12 +165,16 @@ export const translations: Record<Locale, Messages> = {
     processed: 'Запрос обработан.',
     paymentApproved: 'Платёж одобрен.',
     paymentRejected: 'Платёж отклонён.',
-    responseTitle: 'Ответ API',
-    toolCallsTitle: 'Вызовы инструментов',
-    arguments: 'Аргументы',
-    responseDetails: 'Детали ответа',
+    responseTitle: 'Ответ',
+    toolCallsTitle: 'Ссылки на оплату',
+    paymentOperation: 'Создание платёжной ссылки',
+    invoiceOperation: 'Выставление счёта',
+    approvalAmount: 'Сумма',
+    approvalPurpose: 'Назначение',
+    paymentLinkReady: 'Платёжная ссылка готова.',
+    invoiceLinkReady: 'Счёт готов к оплате.',
+    openInvoice: 'Открыть счёт',
     pay: 'Перейти к оплате',
-    missingResult: 'Результат отсутствует',
     approvalLabel: 'Проверка операции',
     approvalTitle: 'Требуется подтверждение',
     safeActions: 'Выполняется автоматически',
@@ -143,15 +188,34 @@ export const translations: Record<Locale, Messages> = {
     footer: 'Проверяйте сумму и назначение перед подтверждением платежа.',
   },
   en: {
+    locale: 'en',
     documentTitle: 'YooKassa · Payment manager',
     title: 'Payment manager',
     languageSwitcher: 'Choose language',
     switchToLight: 'Switch to light theme',
     switchToDark: 'Switch to dark theme',
     loadingClient: 'Loading client settings…',
-    clientNotFound: 'Could not load client settings.',
+    clientListError: 'Could not load the list of shops and services.',
+    clientConfigError: 'Could not load the selected service settings.',
+    clientSelectionTitle: 'Choose a shop or service',
+    clientSelectionPrompt: 'Which client do you want to connect to?',
+    noConfiguredClients:
+      'No configured shops or services were found. Add a client to the clients/ directory.',
+    retryClientLoad: 'Retry',
+    backToClientSelection: 'Choose another service',
     requestSection: 'Request form',
     resultsSection: 'Results',
+    chatHistory: 'Chat history',
+    emptyChat: 'Send a message to start the conversation.',
+    loadingHistory: 'Loading conversation history…',
+    historyLoadError: 'Could not load conversation history.',
+    retryHistory: 'Retry',
+    userLabel: 'You',
+    assistantLabel: 'Assistant',
+    processing: 'Working on your request…',
+    historyNavigation: 'Navigate requests',
+    chatHistoryScrollbar: 'Scroll chat history',
+    jumpToRequest: 'Jump to request',
     requestLabel: 'What should be done?',
     requestPlaceholder: 'For example: create an invoice for 5,000 RUB for an English course',
     removeFile: 'Remove file',
@@ -194,12 +258,16 @@ export const translations: Record<Locale, Messages> = {
     processed: 'Request processed.',
     paymentApproved: 'Payment approved.',
     paymentRejected: 'Payment rejected.',
-    responseTitle: 'API response',
-    toolCallsTitle: 'Tool calls',
-    arguments: 'Arguments',
-    responseDetails: 'Response details',
-    pay: 'Open checkout',
-    missingResult: 'No result available',
+    responseTitle: 'Response',
+    toolCallsTitle: 'Payment links',
+    paymentOperation: 'Create a payment link',
+    invoiceOperation: 'Create an invoice',
+    approvalAmount: 'Amount',
+    approvalPurpose: 'Purpose',
+    paymentLinkReady: 'The payment link is ready.',
+    invoiceLinkReady: 'The invoice is ready for payment.',
+    openInvoice: 'Open invoice',
+    pay: 'Open payment page',
     approvalLabel: 'Operation review',
     approvalTitle: 'Approval required',
     safeActions: 'Runs automatically',

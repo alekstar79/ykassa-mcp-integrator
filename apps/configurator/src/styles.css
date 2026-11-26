@@ -8,7 +8,7 @@
   --accent: #1a365d;
   --accent-foreground: #fff;
   --surface-hover: #f3f4f6;
-  --browser-body-surface: color-mix(in srgb, var(--paper) 98%, black 2%);
+  --browser-body-surface: var(--paper);
   --browser-toolbar-surface: color-mix(in srgb, var(--paper) 96%, black 4%);
   --browser-frame-shadow:
     0 1px 2px rgb(0 0 0 / 4%), 0 8px 24px rgb(0 0 0 / 6%);
@@ -34,7 +34,7 @@
   --accent: #60a5fa;
   --accent-foreground: #111827;
   --surface-hover: #374151;
-  --browser-body-surface: color-mix(in srgb, var(--paper) 98%, white 2%);
+  --browser-body-surface: var(--paper);
   --browser-toolbar-surface: color-mix(in srgb, var(--paper) 96%, white 4%);
   --browser-frame-shadow:
     0 1px 2px rgb(0 0 0 / 30%), 0 12px 32px rgb(0 0 0 / 40%);
@@ -281,6 +281,10 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   gap: 18px 20px;
   min-width: 0;
+}
+
+.llm-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .messenger-grid {
@@ -605,7 +609,17 @@ h1 {
   filter: brightness(0.94);
 }
 
+@media (max-width: 1099px) {
+  .llm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 719px) {
+  .llm-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .ui-grid {
     grid-template-columns: minmax(0, 1fr);
   }

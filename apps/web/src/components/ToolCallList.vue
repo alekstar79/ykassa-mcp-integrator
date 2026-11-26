@@ -1,32 +1,41 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Messages } from '../i18n';
 import type { ToolCall } from '../types';
 
-defineProps<{ calls: ToolCall[]; messages: Messages }>();
+const props = defineProps<{ calls: ToolCall[]; messages: Messages }>();
 
-function displayResult(result: unknown): string {
-  return JSON.stringify(result, null, 2) ?? '';
-}
+const paymentLinks = computed(() =>
+  props.calls.flatMap((call) => {
+    if (
+      call.error !== undefined ||
+      (call.name !== 'create_payment' && call.name !== 'create_invoice')
+    ) {
+      return [];
+    }
+
+    const url = getConfirmationUrl(call.result);
+    return url === null ? [] : [{ id: call.id, name: call.name, url }];
+  }),
+);
 
 function getConfirmationUrl(result?: string): string | null {
   if (typeof result !== 'string') return null;
 
   let candidate = result.trim();
-  if (!candidate.startsWith('https://yoomoney.ru/checkout/')) {
-    try {
-      const parsed: unknown = JSON.parse(candidate);
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        !('confirmation_url' in parsed) ||
-        typeof parsed.confirmation_url !== 'string'
-      ) {
-        return null;
-      }
-      candidate = parsed.confirmation_url;
-    } catch {
+  try {
+    const parsed: unknown = JSON.parse(candidate);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('confirmation_url' in parsed) ||
+      typeof parsed.confirmation_url !== 'string'
+    ) {
       return null;
     }
+    candidate = parsed.confirmation_url;
+  } catch {
+    return null;
   }
 
   try {
@@ -43,35 +52,35 @@ function getConfirmationUrl(result?: string): string | null {
 </script>
 
 <template>
-  <section class="tool-calls-card" aria-live="polite">
+  <section
+    v-if="paymentLinks.length > 0"
+    class="tool-calls-card"
+    aria-live="polite"
+  >
     <h2>{{ messages.toolCallsTitle }}</h2>
-    <ol class="tool-call-list">
-      <li v-for="call in calls" :key="call.id">
-        <strong>{{ call.name }}</strong>
-        <details>
-          <summary>{{ messages.arguments }}</summary>
-          <pre>{{ displayResult(call.args) }}</pre>
-        </details>
-        <p v-if="call.error" class="tool-call-error" role="status">
-          {{ call.error }}
+    <ul class="payment-link-list">
+      <li v-for="link in paymentLinks" :key="link.id">
+        <p>
+          {{
+            link.name === 'create_invoice'
+              ? messages.invoiceLinkReady
+              : messages.paymentLinkReady
+          }}
         </p>
-        <div v-else-if="getConfirmationUrl(call.result)" class="payment-result">
-          <a
-            class="payment-link"
-            :href="getConfirmationUrl(call.result) ?? undefined"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {{ messages.pay }}
-          </a>
-          <details>
-            <summary>{{ messages.responseDetails }}</summary>
-            <pre>{{ call.result }}</pre>
-          </details>
-        </div>
-        <pre v-else>{{ call.result ?? messages.missingResult }}</pre>
+        <a
+          class="payment-link"
+          :href="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{
+            link.name === 'create_invoice'
+              ? messages.openInvoice
+              : messages.pay
+          }}
+        </a>
       </li>
-    </ol>
+    </ul>
   </section>
 </template>
 
@@ -90,7 +99,7 @@ h2 {
   font-weight: 600;
 }
 
-.tool-call-list {
+.payment-link-list {
   display: grid;
   gap: 12px;
   margin: 0;
@@ -99,50 +108,16 @@ h2 {
 }
 
 li {
-  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 9px;
   padding: 14px 0;
   border-top: 1px solid var(--line);
 }
 
-strong {
-  display: block;
-  margin-bottom: 4px;
-  overflow-wrap: anywhere;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-details {
-  margin-top: 8px;
-}
-
-summary {
-  cursor: pointer;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-pre {
-  max-width: 100%;
-  max-height: 220px;
-  margin: 14px 0 0;
-  overflow: auto;
-  color: var(--code);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 400;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.payment-result {
-  display: grid;
-  justify-items: start;
-  gap: 9px;
-  margin-top: 14px;
+p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .payment-link {
@@ -171,14 +146,7 @@ pre {
   transform: translateY(1px);
 }
 
-.tool-call-error {
-  margin: 12px 0 0;
-  color: var(--error);
-  line-height: 1.5;
-}
-
-a:focus-visible,
-summary:focus-visible {
+a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

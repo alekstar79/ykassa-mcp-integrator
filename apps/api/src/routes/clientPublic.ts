@@ -1,7 +1,11 @@
+import { readdir, stat } from 'node:fs/promises';
+import * as path from 'node:path';
 import { Router, type Request, type Response } from 'express';
 import type { PublicClientConfig } from '@alekstar79/ykassa-contracts';
+import { isRecord } from '../http.js';
 import {
   CLIENTS_DIR,
+  isValidClientName,
   loadClientConfig,
   validateClientName,
 } from '../config.js';
@@ -15,6 +19,48 @@ export function createClientPublicRouter(
 ) {
   const router = Router();
   const clientsDir = options.clientsDir ?? CLIENTS_DIR;
+
+  router.get('/', async (_req: Request, res: Response) => {
+    let entries;
+    try {
+      entries = await readdir(clientsDir, { withFileTypes: true });
+    } catch (error) {
+      if (isRecord(error) && error.code === 'ENOENT') {
+        res.json({ clients: [] });
+        return;
+      }
+      throw error;
+    }
+
+    const clients = [];
+    for (const entry of entries) {
+      if (
+        !entry.isDirectory() ||
+        entry.name === 'example' ||
+        !isValidClientName(entry.name)
+      ) {
+        continue;
+      }
+      const clientDirectory = path.join(clientsDir, entry.name);
+      if (
+        !(await isFile(path.join(clientDirectory, 'config.yaml'))) ||
+        !(await isFile(path.join(clientDirectory, '.env')))
+      ) {
+        continue;
+      }
+
+      const config = await loadClientConfig(entry.name, clientsDir);
+      clients.push({
+        name: entry.name,
+        display_name: config.brand?.display_name?.trim() || entry.name,
+      });
+    }
+
+    clients.sort((left, right) =>
+      left.display_name.localeCompare(right.display_name),
+    );
+    res.json({ clients });
+  });
 
   router.get('/:name/public', async (req: Request, res: Response) => {
     const clientName = validateClientName(req.params.name);
@@ -48,6 +94,15 @@ export function createClientPublicRouter(
   });
 
   return router;
+}
+
+async function isFile(filePath: string): Promise<boolean> {
+  try {
+    return (await stat(filePath)).isFile();
+  } catch (error) {
+    if (isRecord(error) && error.code === 'ENOENT') return false;
+    throw error;
+  }
 }
 
 export const clientPublicRouter = createClientPublicRouter();

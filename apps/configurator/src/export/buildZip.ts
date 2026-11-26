@@ -58,7 +58,7 @@ function buildReadme(
       ? {
           'reference-ui': [
             '2. Запустите API командой `npm run start:api` и интерфейс командой `npm run dev`.',
-            `3. Откройте \`http://localhost:5173/?client=${clientName}\`.`,
+            '3. Откройте `http://localhost:5173/`; настроенный клиент загрузится автоматически или появится список для выбора.',
           ],
           'custom-ui': [
             '2. Запустите API командой `npm run start:api`.',
@@ -74,7 +74,7 @@ function buildReadme(
       : {
           'reference-ui': [
             '2. Start the API with `npm run start:api` and the UI with `npm run dev`.',
-            `3. Open \`http://localhost:5173/?client=${clientName}\`.`,
+            '3. Open `http://localhost:5173/`; the configured client loads automatically or a selection list is shown.',
           ],
           'custom-ui': [
             '2. Start the API with `npm run start:api`.',

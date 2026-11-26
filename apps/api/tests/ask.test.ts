@@ -378,7 +378,7 @@ describe('POST /ask', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe(
-      'Ошибка в аргументах инструмента: amount: must be number',
+      'Не удалось проверить параметры запроса. Проверьте данные и повторите попытку.',
     );
     expect(runAgent).toHaveBeenCalledOnce();
   });

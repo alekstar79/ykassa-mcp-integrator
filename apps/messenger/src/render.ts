@@ -44,6 +44,7 @@ const COPY = {
     api409: 'Операция больше не разрешена текущими настройками.',
     api410: 'Время подтверждения истекло.',
     api500: 'Сервис временно недоступен.',
+    api502: 'Не удалось безопасно разобрать финансовую операцию; операция не выполнялась. Уточните данные и повторите запрос.',
     api503: 'Не удалось подготовить карточку подтверждения; операция не выполнялась. Повторите запрос.',
     apiOther: 'Не удалось связаться с сервисом.',
   },
@@ -77,6 +78,7 @@ const COPY = {
     api409: 'The operation is no longer allowed by current settings.',
     api410: 'The approval has expired.',
     api500: 'The service is temporarily unavailable.',
+    api502: 'The financial operation could not be safely structured; no operation was executed. Clarify the details and try again.',
     api503: 'Could not prepare an approval card; the operation was not executed. Please retry.',
     apiOther: 'Could not reach the service.',
   },
@@ -208,6 +210,7 @@ export function renderApiError(
   }
   if (status === 409) return localized(locale, 'api409');
   if (status === 410) return localized(locale, 'api410');
+  if (status === 502) return localized(locale, 'api502');
   if (status === 503) return localized(locale, 'api503');
   if (status === 500) return localized(locale, 'api500');
   return localized(locale, 'apiOther');

@@ -46,8 +46,48 @@ const riskyActions = computed(
     ),
 );
 
-function displayResult(result: unknown): string {
-  return JSON.stringify(result, null, 2) ?? '';
+function getOperationLabel(action: ProposedActionItem): string {
+  return action.tool === 'create_invoice'
+    ? props.messages.invoiceOperation
+    : props.messages.paymentOperation;
+}
+
+function getAmountText(args: Record<string, unknown>): string | undefined {
+  const amount = isRecord(args.amount) ? args.amount : undefined;
+  const value = amount?.value ?? args.amount;
+  if (
+    (typeof value !== 'string' && typeof value !== 'number') ||
+    (typeof value === 'string' && value.trim() === '')
+  ) {
+    return undefined;
+  }
+
+  const numericAmount = Number(value);
+  if (!Number.isFinite(numericAmount)) return undefined;
+
+  const formattedAmount = numericAmount.toLocaleString(
+    props.messages.locale === 'ru' ? 'ru-RU' : 'en-US',
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+  );
+  const currency =
+    typeof amount?.currency === 'string'
+      ? amount.currency.toUpperCase()
+      : '';
+  return currency === 'RUB'
+    ? `${formattedAmount} ₽`
+    : currency.length > 0
+      ? `${formattedAmount} ${currency}`
+      : formattedAmount;
+}
+
+function getPurpose(args: Record<string, unknown>): string | undefined {
+  return typeof args.description === 'string' && args.description.trim()
+    ? args.description.trim()
+    : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 </script>
 
@@ -67,15 +107,19 @@ function displayResult(result: unknown): string {
         class="action-details"
       >
         <dt>{{ messages.operation }}</dt>
-        <dd class="technical-value">{{ action.tool }}</dd>
+        <dd>{{ getOperationLabel(action) }}</dd>
+        <template v-if="getAmountText(action.args)">
+          <dt>{{ messages.approvalAmount }}</dt>
+          <dd>{{ getAmountText(action.args) }}</dd>
+        </template>
+        <template v-if="getPurpose(action.args)">
+          <dt>{{ messages.approvalPurpose }}</dt>
+          <dd>{{ getPurpose(action.args) }}</dd>
+        </template>
         <dt>{{ messages.confirmation }}</dt>
         <dd>
           {{ action.requires_confirmation ? messages.yes : messages.no }}
         </dd>
-        <details>
-          <summary>{{ messages.arguments }}</summary>
-          <pre>{{ displayResult(action.args) }}</pre>
-        </details>
       </dl>
     </div>
     <div v-if="riskyActions.length > 0" class="approval-group">
@@ -86,15 +130,19 @@ function displayResult(result: unknown): string {
         class="action-details"
       >
         <dt>{{ messages.operation }}</dt>
-        <dd class="technical-value">{{ action.tool }}</dd>
+        <dd>{{ getOperationLabel(action) }}</dd>
+        <template v-if="getAmountText(action.args)">
+          <dt>{{ messages.approvalAmount }}</dt>
+          <dd>{{ getAmountText(action.args) }}</dd>
+        </template>
+        <template v-if="getPurpose(action.args)">
+          <dt>{{ messages.approvalPurpose }}</dt>
+          <dd>{{ getPurpose(action.args) }}</dd>
+        </template>
         <dt>{{ messages.confirmation }}</dt>
         <dd>
           {{ action.requires_confirmation ? messages.yes : messages.no }}
         </dd>
-        <details>
-          <summary>{{ messages.arguments }}</summary>
-          <pre>{{ displayResult(action.args) }}</pre>
-        </details>
       </dl>
     </div>
     <div class="approval-actions">
@@ -186,22 +234,6 @@ dd {
   overflow-wrap: anywhere;
   color: var(--ink);
   font-weight: 600;
-}
-
-.technical-value,
-pre {
-  font-family: var(--font-mono);
-  font-weight: 400;
-}
-
-pre {
-  max-height: 220px;
-  margin: 14px 0 0;
-  overflow: auto;
-  color: var(--code);
-  font-size: 12px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 .approval-actions {

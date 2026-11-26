@@ -4,6 +4,24 @@ The reference UI, Messenger gateway, and independently built clients communicate
 with the API over HTTP. Set the API base URL to the deployment origin. JSON requests use
 `Content-Type: application/json`.
 
+## `GET /api/clients`
+
+List configured clients for the Reference UI. A client is listed only when its
+directory contains both `config.yaml` and `.env`. The response contains public
+labels only; credentials are never returned.
+
+```json
+{
+  "clients": [
+    { "name": "online-school", "display_name": "Online School" }
+  ]
+}
+```
+
+The Reference UI opens the sole listed client automatically. When multiple
+clients are listed, it waits for an explicit selection. The selection is kept
+in the UI state and is not placed in the browser URL.
+
 ## `POST /api/ask`
 
 Submit a manager request for a client. `client` is the client slug.
@@ -90,18 +108,22 @@ For backwards compatibility, callers may instead send `client`, `amount`, and
 }
 ```
 
-For an explicit payment or invoice creation request where the model asks for
-text confirmation instead of calling a tool, the API retries once with only
-the matching creation tool required. A valid proposal is returned as `202`
-without executing the operation, so the approval card is the confirmation
-step even when the amount is below the configured threshold.
+For payment and invoice creation, the API requests a structured `prepare_operation`
+tool call rather than exposing the real MCP creation tools to the model. The API
+validates the extracted plan against the client's scenario and field policies,
+applies configured defaults, and validates against the current MCP schema.
+Missing or unsupported data stops before MCP. A follow-up can provide the
+missing data in the same session; the API uses the recent transcript to resume
+extraction. If approval is required, the validated proposal is returned as
+`202` without executing the operation. On approval, the API revalidates and
+executes the saved arguments without another model request.
 
 Errors use a JSON object with an `error` string. `400` indicates an invalid
 request, `404` a missing client configuration, `413` a request exceeding the
-HTTP body size limit, `500` a configuration or server failure, and `503` a
-failed recovery when the API cannot turn a text-only confirmation request into
-a valid creation proposal. This can happen when the provider cannot require a
-tool call or returns an invalid proposal. No operation is executed.
+HTTP body size limit, `500` a configuration or server failure, and `502` an
+invalid or unstructured operation plan. Providers that cannot force tool
+selection may return text instead; the API rejects it and executes no
+financial MCP operation.
 
 ### Example
 
@@ -156,6 +178,59 @@ curl -X POST http://localhost:3000/api/approve \
   -d '{"approval_id":"approval-id","approved":true}'
 ```
 
+## `GET /api/history`
+
+Read the complete transcript for a client session. The Reference UI uses this
+to restore earlier messages after a reload; it does not add the transcript to
+each LLM request.
+
+### Query parameters
+
+- `client`: client slug.
+- `session_id`: UUID returned by `/api/ask`.
+
+### Response
+
+```json
+{
+  "session_id": "123e4567-e89b-42d3-a456-426614174000",
+  "messages": [
+    {
+      "id": "message-id",
+      "turn_id": "turn-id",
+      "created_at": "2026-03-19T10:00:00.000Z",
+      "role": "user",
+      "content": "Create a payment link"
+    },
+    {
+      "id": "assistant-message-id",
+      "turn_id": "turn-id",
+      "created_at": "2026-03-19T10:00:03.000Z",
+      "role": "assistant",
+      "content": "The payment link is ready.",
+      "tool_calls": [
+        {
+          "name": "create_payment",
+          "args": {},
+          "result": "{\"id\":\"payment-id\"}"
+        }
+      ]
+    }
+  ]
+}
+```
+
+An unknown but valid client/session pair returns `200 OK` with an empty
+`messages` array. The response is marked `Cache-Control: no-store`. The API
+does not yet authenticate users; deploy it only in a trusted environment and
+add authentication and tenant authorization before production use.
+
+### Example
+
+```sh
+curl 'http://localhost:3000/api/history?client=online-school&session_id=123e4567-e89b-42d3-a456-426614174000'
+```
+
 ## `GET /api/clients/:name/public`
 
 Return the public client settings needed to label and configure a client UI.
@@ -200,13 +275,15 @@ curl http://localhost:3000/api/clients/online-school/public
 
 ## Connecting a custom UI
 
-A custom client needs only these three endpoints:
+A custom client can use these endpoints:
 
-1. `GET /api/clients/:name/public` to load the public brand, UI settings,
+1. `GET /api/clients` to discover configured client names and display labels.
+2. `GET /api/clients/:name/public` to load the public brand, UI settings,
    scenario allowlist, approval threshold, and limits.
-2. `POST /api/ask` to submit a user request and display either a completed
+3. `POST /api/ask` to submit a user request and display either a completed
    response (`200`) or the pending approval details (`202`).
-3. `POST /api/approve` to submit an explicit approval or rejection.
+4. `POST /api/approve` to submit an explicit approval or rejection.
+5. `GET /api/history` to restore the transcript for a persisted `session_id`.
 
 Treat the public client response as display and client-side configuration, not
 as authorization. The API remains responsible for enforcing the configured

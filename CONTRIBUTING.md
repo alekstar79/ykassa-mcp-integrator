@@ -54,8 +54,10 @@ npm run dev:configurator
 ```
 
 Run services in separate terminals. The API listens on port 3000, the
-reference UI on port 5173, and the configurator on port 5174. The Messenger
-command starts enabled Telegram and MAX clients. See
+reference UI on port 5173, and the configurator on port 5174. Open the
+reference UI at `http://localhost:5173/`; it loads a single configured client
+or asks you to choose when several are available. The Messenger command starts
+enabled Telegram and MAX clients. See
 `apps/messenger/README.md` for bot setup and chat commands.
 
 **Local LLM development.** If you don't have an API key from OpenAI, Anthropic, or Google, you can run a local OpenAI-compatible proxy to GitHub Copilot. See `docs/copilot-proxy.md` for setup and risks. This is a development-only option, not for production.
@@ -100,7 +102,6 @@ npm run client:init -- my-client
 
 Add LLM settings to `clients/my-client/.env` if they are not set in the root
 `.env`. Edit `clients/my-client/config.yaml`, then open
-`http://localhost:5173/?client=my-client`.
 
 To connect a Telegram bot, configure the client's `messengers.telegram`
 settings and `TELEGRAM_BOT_TOKEN`, then follow

@@ -1,20 +1,25 @@
-import { mkdtemp, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CLIENTS_DIR } from '../src/config.js';
 import { errorHandler } from '../src/http.js';
-import { clientPublicRouter } from '../src/routes/clientPublic.js';
+import { createClientPublicRouter } from '../src/routes/clientPublic.js';
 
 const temporaryDirectories: string[] = [];
 
-async function createClientFixture(configContents?: string): Promise<string> {
+async function createClientFixture(
+  configContents?: string,
+  clientsDir: string = CLIENTS_DIR,
+): Promise<string> {
+  await mkdir(clientsDir, { recursive: true });
   const temporaryDirectory = await mkdtemp(
-    path.join(CLIENTS_DIR, 'vitest-client-'),
+    path.join(clientsDir, 'vitest-client-'),
   );
   const directory = path.join(
-    CLIENTS_DIR,
+    clientsDir,
     path.basename(temporaryDirectory).toLowerCase(),
   );
   if (temporaryDirectory !== directory) {
@@ -39,9 +44,9 @@ async function createClientFixture(configContents?: string): Promise<string> {
   return path.basename(directory);
 }
 
-function createApp() {
+function createApp(clientsDir: string = CLIENTS_DIR) {
   const app = express();
-  app.use('/api/clients', clientPublicRouter);
+  app.use('/api/clients', createClientPublicRouter({ clientsDir }));
   app.use(errorHandler);
   return app;
 }
@@ -127,5 +132,59 @@ describe('GET /api/clients/:name/public', () => {
     expect(response.body.brand).not.toHaveProperty('tone');
     expect(response.body.brand).not.toHaveProperty('primary_color');
     expect(response.body.brand).not.toHaveProperty('greeting');
+  });
+});
+
+describe('GET /api/clients', () => {
+  afterEach(async () => {
+    await Promise.all(
+      temporaryDirectories.splice(0).map((directory) =>
+        rm(directory, { recursive: true, force: true }),
+      ),
+    );
+  });
+
+  it('lists only clients with config and secrets files without exposing secrets', async () => {
+    const clientsDir = await mkdtemp(
+      path.join(tmpdir(), 'ykassa-client-discovery-'),
+    );
+    temporaryDirectories.push(clientsDir);
+    const clientName = await createClientFixture(undefined, clientsDir);
+    const incompleteDirectory = path.join(clientsDir, 'incomplete-client');
+    await mkdir(incompleteDirectory);
+    await writeFile(
+      path.join(incompleteDirectory, 'config.yaml'),
+      'allowed_scenarios: [create_payment]\napproval_threshold: 1000\nrequire_human_confirmation: true\n',
+    );
+    const exampleDirectory = path.join(clientsDir, 'example');
+    await mkdir(exampleDirectory);
+    await writeFile(
+      path.join(exampleDirectory, 'config.yaml'),
+      'allowed_scenarios: [create_payment]\napproval_threshold: 1000\nrequire_human_confirmation: true\n',
+    );
+    await writeFile(path.join(exampleDirectory, '.env'), 'template=true\n');
+
+    const response = await request(createApp(clientsDir)).get('/api/clients');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      clients: [{ name: clientName, display_name: 'Test Brand' }],
+    });
+    expect(JSON.stringify(response.body)).not.toContain('test-token-only');
+    expect(JSON.stringify(response.body)).not.toContain('test-shop-only');
+  });
+
+  it('returns an empty list when the clients directory does not exist', async () => {
+    const missingClientsDir = path.join(
+      tmpdir(),
+      `ykassa-missing-clients-${Date.now()}`,
+    );
+
+    const response = await request(createApp(missingClientsDir)).get(
+      '/api/clients',
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ clients: [] });
   });
 });

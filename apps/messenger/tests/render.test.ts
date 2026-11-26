@@ -110,7 +110,16 @@ describe('messenger rendering', () => {
     ]);
   });
 
-  it('explains that a failed approval-card recovery did not execute the operation', () => {
+  it('explains that an unstructured financial plan was not executed', () => {
+    expect(renderApiError(502, 'ru', 'ask')).toContain(
+      'операция не выполнялась',
+    );
+    expect(renderApiError(502, 'en', 'ask')).toContain(
+      'no operation was executed',
+    );
+  });
+
+  it('explains that an approval card could not be prepared', () => {
     expect(renderApiError(503, 'ru', 'ask')).toContain(
       'операция не выполнялась',
     );

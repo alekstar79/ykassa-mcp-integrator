@@ -3,13 +3,19 @@ import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 import { PROJECT_ROOT } from './config.js';
+import { validateCorsConfiguration } from './http.js';
 import { createApp } from './lib.js';
 
-const cwdEnvPath = process.env.DOTENV_CONFIG_PATH ?? path.join(process.cwd(), '.env');
-const dotenvPath = existsSync(cwdEnvPath)
-  ? cwdEnvPath
-  : path.join(PROJECT_ROOT, '.env');
-loadDotenv({ path: dotenvPath });
+const dotenvPaths = [
+  path.join(process.cwd(), 'apps/api/.env'),
+  process.env.DOTENV_CONFIG_PATH,
+  path.join(process.cwd(), '.env'),
+  path.join(PROJECT_ROOT, '.env'),
+].filter((dotenvPath): dotenvPath is string => dotenvPath !== undefined);
+for (const dotenvPath of new Set(dotenvPaths.map((item) => path.resolve(item)))) {
+  if (existsSync(dotenvPath)) loadDotenv({ path: dotenvPath });
+}
+validateCorsConfiguration();
 
 const port = Number(process.env.PORT ?? 3000);
 if (!Number.isInteger(port) || port < 1 || port > 65535) {

@@ -56,8 +56,31 @@ npm run start:messenger
 npm run start:web
 ```
 
-Open the Reference UI at `http://127.0.0.1:5173/?client=my-client`.
+Open the Reference UI at `http://127.0.0.1:5173/`. A single configured client
+loads automatically; if there are several, choose one in the interface.
 Start the configurator with `npm run start:configurator`.
+
+### UI and API origins
+
+The local demo uses API `http://localhost:3000` and UI
+`http://127.0.0.1:5173` or `http://localhost:5173` by default. If you change
+the UI host or port, add its exact origin to `apps/api/.env`:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+For a custom address such as `http://127.0.0.1:5174`, add it to the
+comma-separated list. Use origins only, with no path or trailing slash.
+`apps/api/.env.example` contains the local template; keep `PORT` in the root
+`.env`.
+
+Set the API address with `VITE_API_URL` in `apps/web/.env`. It defaults to
+`http://localhost:3000`. After changing it, run `npm run build:packages` to
+refresh the CLI-served UI. For production on one domain, leave `VITE_API_URL`
+empty and configure a reverse proxy from `/api` to the API. If the UI and API
+use separate domains, set the full API origin in `VITE_API_URL` and the exact
+HTTPS UI origin in `CORS_ALLOWED_ORIGINS`. Do not use `*` for a public service.
 
 ## Run with the CLI
 
@@ -320,7 +343,10 @@ restrict access to it.
 
 - JWT and RBAC in front of the API.
 - HTTPS on the product domain.
-- CORS restricted to the UI domain, not `localhost`.
+- `CORS_ALLOWED_ORIGINS` contains only exact HTTPS UI origins, or is empty when
+  the UI and API share one origin.
+- `VITE_API_URL` selects the API origin when hosted separately; for one origin,
+  route `/api` through a reverse proxy.
 - An API key from the selected LLM provider.
 - Rate limiting on `/api/ask` and `/api/approve`.
 - External storage for pending approvals, such as Redis.

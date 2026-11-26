@@ -13,7 +13,9 @@ in this `.env` when they are not configured in the project root `.env`.
 Client values take precedence over root values.
 
 Start the API with `npm run start:api`. Start the Reference UI with
-`npm run start:web` and open `http://localhost:5173/?client=<name>`.
+`npm run start:web` and open `http://localhost:5173/`. The client loads
+automatically when it is the only configured client; otherwise, select it
+from the client list.
 If Telegram or MAX is enabled, start the Messenger with
 `npm run start:messenger` in another terminal.
 

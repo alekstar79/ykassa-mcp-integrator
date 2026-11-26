@@ -18,6 +18,7 @@ import { readErrorBody, SSEParserStream, tryParseJSON } from '../sse-parser.js';
 export function createAnthropic(config: AnthropicConfig): LLMProvider {
   return {
     id: 'anthropic',
+    supportsRequiredToolChoice: true,
 
     async chat(request: ChatRequest): Promise<ChatStreamResult> {
       const url = (config.baseURL ?? 'https://api.anthropic.com') + '/v1/messages';
@@ -42,6 +43,13 @@ export function createAnthropic(config: AnthropicConfig): LLMProvider {
           description: tool.description,
           input_schema: tool.parameters,
         }));
+        if (request.toolChoice === 'required') {
+          const [onlyTool] = request.tools;
+          body.tool_choice =
+            request.tools.length === 1 && onlyTool !== undefined
+              ? { type: 'tool', name: onlyTool.name }
+              : { type: 'any' };
+        }
       }
 
       const httpResponse = await fetch(url, {

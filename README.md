@@ -56,8 +56,33 @@ npm run start:messenger
 npm run start:web
 ```
 
-Reference UI откройте по адресу `http://127.0.0.1:5173/?client=my-client`.
+Откройте Reference UI по адресу `http://127.0.0.1:5173/`. Если настроен один
+клиент, он загрузится автоматически; если несколько — выберите нужный в
+интерфейсе.
 Конфигуратор запускается командой `npm run start:configurator`.
+
+### Адреса UI и API
+
+Для локальной демонстрации по умолчанию используются API `http://localhost:3000`
+и UI `http://127.0.0.1:5173` или `http://localhost:5173`. Если меняете адрес
+или порт UI, добавьте его точный origin в `apps/api/.env`:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Для нестандартного адреса, например `http://127.0.0.1:5174`, добавьте его в
+список через запятую. Указывайте только origin, без пути и завершающего `/`.
+`apps/api/.env.example` содержит локальный шаблон; корневой `.env` остаётся
+местом для `PORT`.
+
+Адрес API задаётся через `VITE_API_URL` в `apps/web/.env`. По умолчанию это
+`http://localhost:3000`. После изменения переменной пересоберите пакеты командой
+`npm run build:packages`, чтобы обновить UI, который запускается через CLI.
+Для production с одним доменом оставьте `VITE_API_URL` пустым и настройте
+reverse proxy, направляющий `/api` на API. Если UI и API размещены на разных
+доменах, задайте полный origin API в `VITE_API_URL`, а точный HTTPS-origin UI в
+`CORS_ALLOWED_ORIGINS`. Не используйте `*` для публичного сервиса.
 
 ## Запуск через CLI
 
@@ -305,7 +330,10 @@ OpenAI-совместимого proxy описана в [CONTRIBUTING.md](CONTRI
 
 - JWT и RBAC перед API.
 - HTTPS на домене продукта.
-- CORS настроен на домен UI, не на `localhost`.
+- `CORS_ALLOWED_ORIGINS` содержит только точные HTTPS-origin UI либо отключён,
+  если UI и API обслуживаются с одного origin.
+- `VITE_API_URL` задаёт API origin при раздельном размещении; при едином origin
+  UI использует reverse proxy для `/api`.
 - API key выбранного LLM-провайдера.
 - Rate limiting для `/api/ask` и `/api/approve`.
 - Внешнее хранилище для ожидающих подтверждений, например Redis.

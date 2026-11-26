@@ -295,6 +295,7 @@ describe('Anthropic SSE provider', () => {
     const result = await createAnthropic({ apiKey: 'test-key' }).chat({
       ...request,
       messages: priorMessages,
+      toolChoice: 'required',
     });
 
     expect(await collect(result.stream)).toEqual([
@@ -325,8 +326,10 @@ describe('Anthropic SSE provider', () => {
     const body = JSON.parse(String(init?.body)) as {
       system: string;
       messages: Array<{ role: string; content: unknown }>;
+      tool_choice: { type: string; name: string };
     };
     expect(body.system).toBe('System instructions');
+    expect(body.tool_choice).toEqual({ type: 'tool', name: 'get_payment' });
     expect(body.messages.at(-1)).toMatchObject({
       role: 'user',
       content: [{ type: 'tool_result', tool_use_id: 'call-prior' }],
@@ -407,6 +410,7 @@ describe('Google SSE provider', () => {
     const result = await createGoogle({ apiKey: 'test-key' }).chat({
       ...request,
       messages,
+      toolChoice: 'required',
     });
 
     const chunks = await collect(result.stream);
@@ -435,8 +439,18 @@ describe('Google SSE provider', () => {
     const body = JSON.parse(String(init?.body)) as {
       systemInstruction: { parts: Array<{ text: string }> };
       contents: Array<{ role: string; parts: unknown[] }>;
+      toolConfig: {
+        functionCallingConfig: {
+          mode: string;
+          allowedFunctionNames: string[];
+        };
+      };
     };
     expect(body.systemInstruction.parts[0]?.text).toBe('System instructions');
+    expect(body.toolConfig.functionCallingConfig).toEqual({
+      mode: 'ANY',
+      allowedFunctionNames: ['get_payment'],
+    });
     expect(body.contents.at(-1)?.parts[0]).toMatchObject({
       functionResponse: {
         name: 'get_payment',

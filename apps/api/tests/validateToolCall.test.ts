@@ -101,6 +101,6 @@ describe('validateToolCall', () => {
   it('throws an HTTP 400 validation error for invalid tool arguments', () => {
     expect(() =>
       requireValidToolCall('sample_tool', {}, tools),
-    ).toThrow('Ошибка в аргументах инструмента:');
+    ).toThrow('Не удалось проверить параметры запроса.');
   });
 });

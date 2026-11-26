@@ -27,6 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
   displayName: '',
 });
 const messages = computed(() => translations[props.locale]);
+const resolvedDisplayName = computed(() => props.displayName?.trim() ?? '');
+const activeTurnIndex = 1;
 
 const previewStyle = computed<PreviewStyle>(() => {
   const accent = ACCENT_PALETTE[props.ui.accent][props.theme];
@@ -71,13 +73,84 @@ const previewStyle = computed<PreviewStyle>(() => {
       <div class="preview-header-copy">
         <p
           class="preview-eyebrow"
-          :class="{ 'is-placeholder': !displayName.trim() }"
+          :class="{ 'is-placeholder': !resolvedDisplayName }"
         >
-          {{ displayName.trim() || messages.previewBrandFallback }}
+          {{ resolvedDisplayName || messages.previewBrandFallback }}
         </p>
         <h1 class="preview-title">{{ messages.previewManagerTitle }}</h1>
       </div>
+      <div class="preview-header-controls" aria-hidden="true">
+        <div class="preview-language-switch">
+          <span :class="{ 'is-selected': locale === 'ru' }">RU</span>
+          <span :class="{ 'is-selected': locale === 'en' }">EN</span>
+        </div>
+        <span class="preview-theme-toggle">
+          {{ theme === 'dark' ? '🌞' : '🌙' }}
+        </span>
+      </div>
     </header>
+
+    <section
+      class="preview-history"
+      :aria-label="messages.previewHistoryLabel"
+    >
+      <div class="preview-history-scroll">
+        <div class="preview-turns">
+          <article
+            v-for="turn in messages.previewTurns"
+            :key="turn.request"
+            class="preview-turn"
+          >
+            <div class="preview-user-message">
+              <p class="preview-message-role">
+                {{ messages.previewUserLabel }}
+              </p>
+              <p class="preview-message-copy">{{ turn.request }}</p>
+            </div>
+
+            <div class="preview-assistant-message">
+              <p class="preview-message-role">
+                {{ messages.previewAssistantLabel }}
+              </p>
+              <p class="preview-message-copy">{{ turn.response }}</p>
+              <span
+                class="preview-detail"
+                :class="`preview-detail--${turn.detailType}`"
+              >
+                {{ turn.detail }}
+              </span>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <nav
+        class="preview-history-nav"
+        :aria-label="messages.previewNavigationLabel"
+        aria-hidden="true"
+      >
+        <ol class="preview-history-dots">
+          <li
+            v-for="(_, index) in messages.previewTurns"
+            :key="index"
+            :class="{ 'is-active': index === activeTurnIndex }"
+          >
+            <span />
+          </li>
+        </ol>
+        <div class="preview-history-popover">
+          <ol>
+            <li
+              v-for="(turn, index) in messages.previewTurns"
+              :key="turn.request"
+              :class="{ 'is-current': index === activeTurnIndex }"
+            >
+              {{ turn.request }}
+            </li>
+          </ol>
+        </div>
+      </nav>
+    </section>
 
     <div class="request-form">
       <div
@@ -131,10 +204,16 @@ const previewStyle = computed<PreviewStyle>(() => {
 
 <style scoped>
 .preview-shell {
-  width: min(100%, 800px);
+  display: flex;
+  --h1-size: clamp(1.8rem, 4vw, 2.5rem);
+  width: min(100%, 768px);
+  height: clamp(360px, 68vh, 620px);
   min-width: 0;
+  min-height: 360px;
+  flex-direction: column;
   margin-inline: auto;
   color: var(--ink);
+  background: var(--paper);
   font-family: var(--font-body), serif;
 }
 
@@ -143,8 +222,9 @@ const previewStyle = computed<PreviewStyle>(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 48px;
-  padding-bottom: 22px;
+  flex: 0 0 auto;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -177,10 +257,223 @@ const previewStyle = computed<PreviewStyle>(() => {
   overflow-wrap: anywhere;
 }
 
+.preview-header-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-language-switch {
+  display: flex;
+  height: 36px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 2px);
+  background: var(--surface);
+}
+
+.preview-language-switch span {
+  display: grid;
+  min-width: 36px;
+  height: 34px;
+  place-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.preview-language-switch span.is-selected {
+  color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.preview-theme-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 2px);
+  background: var(--surface);
+  font-size: 16px;
+}
+
+.preview-history {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: visible;
+}
+
+.preview-history-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 2px 0 12px;
+  scrollbar-width: none;
+}
+
+.preview-history-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.preview-turns {
+  display: grid;
+  width: min(100%, 768px);
+  gap: 18px;
+  margin-inline: auto;
+}
+
+.preview-turn {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.preview-user-message {
+  width: fit-content;
+  max-width: min(86%, 680px);
+  justify-self: end;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 2px);
+  background: var(--surface-hover);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .preview-user-message {
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
+  }
+}
+
+.preview-assistant-message {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.preview-message-role {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.preview-message-copy {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.preview-detail {
+  width: fit-content;
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.preview-detail--link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.preview-detail--status {
+  font-family: var(--font-mono), monospace;
+}
+
+.preview-detail--approval {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.preview-history-nav {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: -48px;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+.preview-history-dots {
+  display: grid;
+  width: 42px;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.preview-history-dots li {
+  display: grid;
+  height: 24px;
+  place-items: center;
+}
+
+.preview-history-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.preview-history-dots li.is-active span {
+  background: var(--accent);
+  transform: scale(1.4);
+}
+
+.preview-history-popover {
+  position: absolute;
+  top: 50%;
+  right: calc(100% - 10px);
+  width: min(230px, calc(100vw - 112px));
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 2px);
+  background: var(--surface);
+  box-shadow: var(--micro-shadow);
+  transform: translateY(-50%);
+}
+
+.preview-history-popover ol {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preview-history-popover li {
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 9px;
+  border-radius: var(--radius, 2px);
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-history-popover li.is-current {
+  color: var(--accent);
+  background: var(--surface-hover);
+}
+
 .request-form {
   display: grid;
   gap: 8px;
+  flex: 0 0 auto;
   min-width: 0;
+  margin-top: 12px;
 }
 
 .chat-input-container {
@@ -259,17 +552,35 @@ const previewStyle = computed<PreviewStyle>(() => {
 }
 
 .preview-footer {
-  margin-top: 44px;
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
+  flex: 0 0 auto;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
 
-@media (max-width: 380px) {
-  .preview-footer {
-    margin-top: 30px;
+@media (max-width: 600px) {
+  .preview-history-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .preview-shell {
+    height: clamp(360px, 70vh, 620px);
+  }
+
+  .preview-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .preview-header-controls {
+    margin-left: auto;
+  }
+
+  .preview-history-popover {
+    width: min(210px, calc(100vw - 104px));
   }
 }
 </style>

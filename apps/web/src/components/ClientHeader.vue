@@ -62,8 +62,9 @@ const emit = defineEmits<{
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 48px;
-  padding-bottom: 22px;
+  flex: 0 0 auto;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -133,6 +134,10 @@ h1 {
 .language-switch button[aria-pressed="true"] {
   color: var(--accent);
   background: var(--surface-hover);
+}
+
+:global([data-theme="dark"] .language-switch button[aria-pressed="true"]) {
+  color: var(--accent-hover);
 }
 
 .theme-toggle {

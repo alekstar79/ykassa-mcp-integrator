@@ -46,9 +46,7 @@ const accentSample = computed(() => {
   const palette = ACCENT_PALETTE[form.value.ui.accent];
   return theme.value === 'dark' ? palette.dark.bg : palette.light.bg;
 });
-const previewUrl = computed(
-  () => `localhost:5173/?client=${form.value.name.trim() || '<name>'}`,
-);
+const previewUrl = 'localhost:5173/';
 const previewFrameStyle = computed<CSSProperties>(() => ({
   '--accent': accentSample.value,
 }));

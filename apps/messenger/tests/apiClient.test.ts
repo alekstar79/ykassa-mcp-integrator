@@ -117,7 +117,7 @@ describe('messenger API client', () => {
     });
   });
 
-  it.each([400, 404, 409, 410, 500])(
+  it.each([400, 404, 409, 410, 500, 502])(
     'preserves API error status %s',
     async (status) => {
       const { api } = createTestClient(

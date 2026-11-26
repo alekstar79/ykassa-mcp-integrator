@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
     Manager["Manager"] <-->|request / result / approval| UI["Reference UI (Vue)"]
-    UI <-->|ask / approve HTTP| API["API (Express)"]
+    UI <-->|ask / approve / history HTTP| API["API (Express)"]
     Manager <-->|messages / cards| TG["Telegram Bot API"]
     TG <-->|long polling| Gateway["Messenger gateway"]
     Manager <-->|messages / cards| MAX["MAX Bot API"]
@@ -27,29 +27,39 @@ then forwards requests to the API. It does not import API code or implement
 LLM, MCP, or payment policy. MAX long polling is limited to development and
 testing; production webhook delivery is not implemented.
 
-The API loads the selected client's configuration and secrets, requests the
-current MCP tool list, and sends eligible tools and the manager request to the
-configured LLM provider. The API validates proposed tool calls and applies the
-approval policy before executing payment tools. MCP results are recorded in
-the API audit log; messenger events are recorded separately by the gateway.
+The API loads the selected client's configuration and secrets and requests the
+current MCP tool list. For payment and invoice creation, the API does not expose
+the real creation tools to the model. It asks the model for one structured
+`prepare_operation` call, then applies the scenario allowlist, server-side
+defaults, field policy, and the current MCP JSON Schema. Missing or unsupported
+data stops the operation before MCP. Other operations use the regular
+tool-calling path, with the same allowlist and schema validation. MCP results
+are recorded in the API audit log; messenger events are recorded separately by
+the gateway.
 
 Each `/api/ask` conversation uses a `session_id` returned by the API. The
 Reference UI persists it per client, and Messenger keeps it for the active
 chat session. User messages, assistant replies, and payment-tool results are
 stored in a client-scoped JSONL transcript under `logs/chat-history/`. The
-transcript is not sent with every request. When a request refers to earlier
-conversation context, the LLM can call the API's internal
-`get_chat_history` tool. The API returns recent or lexically relevant turns
-from that same client/session; this tool does not call YooKassa MCP.
+transcript is not sent to the model as an implicit persistent session.
+Provider calls are stateless: the API includes system instructions in each
+request. The financial planner receives recent session context explicitly, and
+the regular workflow can call the API's internal `get_chat_history` tool when a
+request refers to earlier conversation context. The API returns recent or
+lexically relevant turns from that same client/session; this tool does not call
+YooKassa MCP. A follow-up that supplies data requested by the deterministic
+financial validator resumes extraction using that history. The Reference UI
+reads the full transcript from `GET /api/history` when restoring a session and
+keeps its composer fixed below the independently scrollable chat.
 
 ## Enrichment layer
 
-The LLM parses the manager's intent and proposes tool arguments. Before a call
-is sent to MCP, `enrich.ts` fills missing values from the client's `defaults`,
-then applies validated per-request `overrides`; overrides take precedence for
-that request only. `validateToolCall.ts` checks the resulting arguments
-against the tool's JSON Schema returned by `tools/list`. Invalid arguments are
-rejected before the MCP call.
+For payment and invoice creation, the planner extracts candidate values through
+`prepare_operation`; the API, not the model, applies the client's defaults and
+validated per-request `overrides`. For other operations, the LLM proposes tool
+arguments directly. In both paths, `validateToolCall.ts` checks the final
+arguments against the relevant JSON Schema returned by `tools/list`; invalid
+arguments are rejected before the MCP call.
 
 The Reference UI stores payment settings locally and sends them as `overrides`
 with `/api/ask`. The Configurator does not edit payment defaults: generated
@@ -107,36 +117,45 @@ deployments should use a supported provider endpoint and API key.
 
 ## Human approval
 
-1. The LLM proposes one or more tool calls.
-2. The API checks each call against the current MCP tools, the client's
-   `allowed_scenarios`, and the operation risk policy.
-3. If confirmation is required, the API returns the proposal without
-   executing it. If the model asks for text confirmation instead of proposing
-   an explicit payment or invoice creation, the API retries once with the
-   relevant creation tool required.
+1. For payment and invoice creation, the model extracts only the requested
+   operation and explicit values through `prepare_operation`; it never calls
+   the real creation tool directly. Providers with required-tool support are
+   asked to return this structured call. If the provider returns only text or
+   an invalid plan, the API fails closed and does not call MCP.
+2. The API checks the plan against the client's `allowed_scenarios`, the
+   server's field policy, configured defaults, and the live MCP schema.
+3. If confirmation is required, the API returns the validated proposal without
+   executing it. Otherwise, server code executes the validated MCP call.
 4. The Reference UI or Messenger gateway presents the approval. A person
    approves or rejects it through `/api/approve`; Telegram and MAX use the
    card buttons, not a free-text reply.
 5. On approval, the API reloads the client's configuration and secrets,
-   reconnects to MCP, obtains the current tool list, and validates the
-   pending calls against the current configuration before execution.
+   reconnects to MCP, obtains the current tool list, and revalidates the
+   saved arguments. The approved creation operation then executes without a
+   second model request.
 
 > Поток risky-вызова (UI → API → LLM → approval → MCP) на интерактивной карте подсвечивается кликом по узлу `Headless API`.
 
 Pending approvals are held in memory and expire after 15 minutes. They are
 lost when the API process restarts.
 
-The recovery retry currently relies on required tool choice from an
-OpenAI-compatible provider. If that is unsupported or the provider does not
-return a valid proposal, the API responds with `503`; no payment tool is
-executed.
+OpenAI-compatible, Anthropic, and Google providers can request a required
+structured tool call. The Ollama adapter cannot force tool selection; if it
+returns text instead of `prepare_operation`, the API responds with `502` and
+does not execute a payment tool. Read-only and lookup operations still use the
+regular LLM tool-calling workflow.
 
 ## Client configuration and tenancy
 
-The `?client=<name>` query parameter selects a client in the UI. The UI loads
-the public client DTO from `GET /api/clients/<name>/public`. It contains
-`brand`, `ui`, `limits`, `allowed_scenarios`, and `approval_threshold`; it
-does not contain client secrets.
+At startup the Reference UI requests `GET /api/clients`. The API scans
+`clients/` and lists directories containing both `config.yaml` and `.env`,
+excluding the example template. If exactly one configured client is available,
+the UI loads it automatically. If there are multiple clients, the UI asks the
+manager to choose one before loading its public configuration from
+`GET /api/clients/<name>/public`. The selected client stays in UI state and is
+sent in API request bodies; it is not encoded in the browser URL. The public
+client DTO contains `brand`, `ui`, `limits`, `allowed_scenarios`, and
+`approval_threshold`; it does not contain client secrets.
 
 The API reads the selected client's `config.yaml` and `.env` for each request.
 Configuration changes therefore take effect without restarting the API.
@@ -163,5 +182,5 @@ The gateway writes operational events to
 
 `clients/example/` is the starting template. A client owner edits settings in
 the configurator, downloads an archive containing `config.yaml`, `.env`, and
-`README.md`, and places it in `clients/<name>/`. The client UI then loads its
-public configuration using `?client=<name>`.
+`README.md`, and places it in `clients/<name>/`. The API discovers configured
+clients when the Reference UI loads; no client query parameter is needed.

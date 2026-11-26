@@ -161,6 +161,85 @@ describe('useClientApi', () => {
     });
   });
 
+  it('restores persisted turns and combines approval continuations by turn ID', async () => {
+    const sessionId = '123e4567-e89b-42d3-a456-426614174000';
+    window.localStorage.setItem(
+      'yookassa-chat-session:online-school',
+      sessionId,
+    );
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse({
+          session_id: sessionId,
+          messages: [
+            {
+              id: 'user-1',
+              turn_id: 'turn-1',
+              created_at: '2026-03-19T10:00:00.000Z',
+              role: 'user',
+              content: 'Создай ссылку.',
+            },
+            {
+              id: 'assistant-1',
+              turn_id: 'turn-1',
+              created_at: '2026-03-19T10:00:01.000Z',
+              role: 'assistant',
+              content: 'Ожидает подтверждения.',
+            },
+            {
+              id: 'assistant-2',
+              turn_id: 'turn-1',
+              created_at: '2026-03-19T10:00:02.000Z',
+              role: 'assistant',
+              content:
+                'Проверьте параметры операции в карточке. MCP-вызов не выполнялся.\n\n- create_payment: {"id":"payment-1"}',
+              tool_calls: [
+                {
+                  name: 'create_payment',
+                  args: { amount: { value: '100', currency: 'RUB' } },
+                  result:
+                    '{"id":"payment-1","amount":{"value":"100","currency":"RUB"}}',
+                },
+              ],
+            },
+            {
+              id: 'user-2',
+              turn_id: 'turn-2',
+              created_at: '2026-03-19T10:01:00.000Z',
+              role: 'user',
+              content: 'Проверь статус.',
+            },
+          ],
+        }),
+      ),
+    );
+    const api = useClientApi(ref('online-school'));
+
+    await api.retryHistory();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/history?client=online-school'),
+    );
+    expect(api.historyLoadFailed.value).toBe(false);
+    expect(api.chatTurns.value).toHaveLength(2);
+    expect(api.chatTurns.value[0]).toMatchObject({
+      id: 'turn-1',
+      request: 'Создай ссылку.',
+      reply: 'Платёжная ссылка на 100,00 ₽ создана.',
+      toolCalls: [
+        {
+          name: 'create_payment',
+          result:
+            '{"id":"payment-1","amount":{"value":"100","currency":"RUB"}}',
+        },
+      ],
+    });
+    expect(api.chatTurns.value[0]?.reply).not.toContain('MCP');
+    expect(api.chatTurns.value[0]?.reply).not.toContain('create_payment');
+    expect(api.chatTurns.value[0]?.reply).not.toContain('{"id"');
+    expect(api.activeTurnId.value).toBe('turn-2');
+  });
+
   it('sends saved client-default overrides with the request', async () => {
     window.localStorage.setItem(
       'ykassa_ui_defaults',
@@ -224,6 +303,7 @@ describe('useClientApi', () => {
     fetchMock
       .mockResolvedValueOnce(
         jsonResponse({
+          reply: 'Проверьте сумму и назначение.',
           requires_approval: true,
           approval_id: 'approval-2',
           proposed_actions: [
@@ -254,6 +334,14 @@ describe('useClientApi', () => {
     expect(api.toolCalls.value).toEqual([
       { id: 'call-1', name: 'create_payment', args: {}, result: 'ok' },
     ]);
+    expect(api.chatTurns.value[0]).toMatchObject({
+      request: 'Выставь счёт',
+      reply: 'Одобрено.',
+      toolCalls: [{ id: 'call-1', name: 'create_payment' }],
+    });
+    expect(api.chatTurns.value[0]?.reply).not.toContain(
+      'Проверьте сумму и назначение.',
+    );
     expect(fetchMock.mock.calls[1]?.[0]).toBe('http://localhost:3000/api/approve');
     expect(
       JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)).approved,

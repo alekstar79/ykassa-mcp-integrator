@@ -191,6 +191,10 @@ async function initClient(args) {
     throw error;
   }
 
+  if (!stdin.isTTY) {
+    throw new Error('Client initialization requires an interactive terminal.');
+  }
+
   const readline = createInterface({ input: stdin, output: stdout });
   let shopId;
   let mcpToken;

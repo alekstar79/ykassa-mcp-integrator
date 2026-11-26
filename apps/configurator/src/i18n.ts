@@ -1,5 +1,12 @@
 export type Locale = 'ru' | 'en';
 
+export interface PreviewTurn {
+  request: string;
+  response: string;
+  detail: string;
+  detailType: 'link' | 'status' | 'approval';
+}
+
 export interface Messages {
   documentTitle: string;
   pageTitle: string;
@@ -9,6 +16,11 @@ export interface Messages {
   previewUnavailable: string;
   previewBrandFallback: string;
   previewManagerTitle: string;
+  previewUserLabel: string;
+  previewAssistantLabel: string;
+  previewHistoryLabel: string;
+  previewNavigationLabel: string;
+  previewTurns: PreviewTurn[];
   requestLabel: string;
   requestPlaceholder: string;
   footer: string;
@@ -118,6 +130,30 @@ export const translations = {
     previewUnavailable: 'Предпросмотр доступен только для Reference UI',
     previewBrandFallback: 'Название сервиса',
     previewManagerTitle: 'Менеджер платежей',
+    previewUserLabel: 'Вы',
+    previewAssistantLabel: 'Ассистент',
+    previewHistoryLabel: 'История чата',
+    previewNavigationLabel: 'Навигация по запросам',
+    previewTurns: [
+      {
+        request: 'Создай платёжную ссылку на 2 500 ₽ за курс английского.',
+        response: 'Платёжная ссылка создана.',
+        detail: 'Перейти к оплате',
+        detailType: 'link',
+      },
+      {
+        request: 'Проверь статус этой ссылки.',
+        response: 'Платёж пока не оплачен.',
+        detail: 'Статус: pending',
+        detailType: 'status',
+      },
+      {
+        request: 'Выставь счёт на оплату курса.',
+        response: 'Перед отправкой счёта требуется подтверждение.',
+        detail: 'Ожидает подтверждения',
+        detailType: 'approval',
+      },
+    ],
     requestLabel: 'Что нужно сделать',
     requestPlaceholder:
       'Например: выставь счёт на 5 000 ₽ за курс английского',
@@ -239,6 +275,30 @@ export const translations = {
     previewUnavailable: 'Preview is available only for the Reference UI',
     previewBrandFallback: 'Service name',
     previewManagerTitle: 'Payment manager',
+    previewUserLabel: 'You',
+    previewAssistantLabel: 'Assistant',
+    previewHistoryLabel: 'Chat history',
+    previewNavigationLabel: 'Navigate requests',
+    previewTurns: [
+      {
+        request: 'Create a payment link for 2,500 RUB for the English course.',
+        response: 'Payment link created.',
+        detail: 'Continue to payment',
+        detailType: 'link',
+      },
+      {
+        request: 'Check the status of that link.',
+        response: 'The payment is still awaiting payment.',
+        detail: 'Status: pending',
+        detailType: 'status',
+      },
+      {
+        request: 'Create an invoice for the course.',
+        response: 'Approval is required before sending the invoice.',
+        detail: 'Awaiting approval',
+        detailType: 'approval',
+      },
+    ],
     requestLabel: 'What should be done?',
     requestPlaceholder:
       'For example: create an invoice for 5,000 RUB for an English course',

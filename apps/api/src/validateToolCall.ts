@@ -75,8 +75,11 @@ export function requireValidToolCall(
 }
 
 export class ToolValidationError extends HttpError {
-  constructor(errors: string[]) {
-    super(400, `Ошибка в аргументах инструмента: ${errors.join('; ')}`);
+  constructor(_errors: string[]) {
+    super(
+      400,
+      'Не удалось проверить параметры запроса. Проверьте данные и повторите попытку.',
+    );
     this.name = 'ToolValidationError';
   }
 }

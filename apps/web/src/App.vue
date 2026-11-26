@@ -2,11 +2,9 @@
 import { computed, ref, watch, type CSSProperties } from 'vue';
 import { CLIENT_CONFIG_DEFAULTS } from '@alekstar79/ykassa-contracts/defaults';
 import { ACCENT_PALETTE } from '@alekstar79/ykassa-contracts/palette';
-import ApprovalCard from './components/ApprovalCard.vue';
 import ClientHeader from './components/ClientHeader.vue';
+import ChatHistory from './components/ChatHistory.vue';
 import RequestForm from './components/RequestForm.vue';
-import ResponseCard from './components/ResponseCard.vue';
-import ToolCallList from './components/ToolCallList.vue';
 import { useClientApi } from './composables/useClientApi';
 import { usePublicClient } from './composables/usePublicClient';
 import { translations, type Locale } from './i18n';
@@ -34,19 +32,28 @@ watch(
 
 const {
   clientName,
+  availableClients,
   publicClient,
   clientError,
   isClientLoading,
+  requiresClientSelection,
+  noConfiguredClients,
+  selectClient,
+  retryClientLoad,
+  backToClientSelection,
 } = usePublicClient(locale);
 const {
-  apiReply,
-  apiWarning,
-  toolCalls,
+  chatTurns,
+  isHistoryLoading,
+  historyLoadFailed,
+  historyLoadErrorDetail,
+  activeTurnId,
   errorMessage,
   pendingApproval,
   isBusy,
   sendRequest,
   resolveApproval,
+  retryHistory,
   clearError,
 } = useClientApi(clientName, locale);
 
@@ -89,6 +96,10 @@ async function handleSubmit(payload: RequestPayload): Promise<void> {
   await sendRequest(payload);
 }
 
+function selectTurn(turnId: string): void {
+  activeTurnId.value = turnId;
+}
+
 function toggleTheme(): void {
   theme.value = theme.value === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', theme.value);
@@ -117,9 +128,69 @@ function setLocale(value: Locale): void {
         <p>{{ messages.loadingClient }}</p>
       </div>
       <div v-else-if="clientError" class="state-panel error-state" role="alert">
-        <p>{{ clientError }}</p>
+        <div class="state-content">
+          <p>{{ clientError }}</p>
+          <div class="state-actions">
+            <button type="button" class="state-action" @click="retryClientLoad">
+              {{ messages.retryClientLoad }}
+            </button>
+            <button
+              v-if="clientName && availableClients.length > 1"
+              type="button"
+              class="state-action"
+              @click="backToClientSelection"
+            >
+              {{ messages.backToClientSelection }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <section
+        v-else-if="requiresClientSelection"
+        class="client-selection"
+        aria-labelledby="client-selection-title"
+      >
+        <p class="client-selection__prompt">
+          {{ messages.clientSelectionPrompt }}
+        </p>
+        <h2 id="client-selection-title">
+          {{ messages.clientSelectionTitle }}
+        </h2>
+        <div class="client-selection__list">
+          <button
+            v-for="client in availableClients"
+            :key="client.name"
+            type="button"
+            class="client-selection__option"
+            @click="selectClient(client.name)"
+          >
+            <span class="client-selection__name">{{ client.display_name }}</span>
+            <span class="client-selection__id">{{ client.name }}</span>
+          </button>
+        </div>
+      </section>
+      <div
+        v-else-if="noConfiguredClients"
+        class="state-panel empty-state"
+        role="status"
+      >
+        <p>{{ messages.noConfiguredClients }}</p>
       </div>
       <template v-else>
+        <ChatHistory
+          :turns="chatTurns"
+          :loading="isHistoryLoading"
+          :load-failed="historyLoadFailed"
+          :load-error-detail="historyLoadErrorDetail"
+          :active-turn-id="activeTurnId"
+          :pending-approval="pendingApproval"
+          :busy="isBusy"
+          :messages="messages"
+          @retry="retryHistory"
+          @select-turn="selectTurn"
+          @resolve-approval="resolveApproval"
+        />
+
         <section class="request-section" :aria-label="messages.requestSection">
           <RequestForm
             :placeholder="messages.requestPlaceholder"
@@ -131,40 +202,11 @@ function setLocale(value: Locale): void {
             :form-style="publicClient?.ui.form_style ?? 'flat'"
             :error-message="errorMessage"
             :busy="isBusy"
-            :approval-pending="pendingApproval !== null"
+            :approval-pending="pendingApproval !== null || isHistoryLoading"
             @submit="handleSubmit"
             @clear-error="clearError"
           />
         </section>
-
-        <Transition name="fade" mode="out-in">
-          <section
-            v-if="apiReply || toolCalls.length > 0 || pendingApproval"
-            key="results"
-            class="results-section"
-            :aria-label="messages.resultsSection"
-          >
-            <div class="results-content" aria-live="polite">
-              <ResponseCard
-                v-if="apiReply"
-                :reply="apiReply"
-                :warning="apiWarning"
-                :messages="messages"
-              />
-              <ToolCallList
-                v-if="toolCalls.length > 0"
-                :calls="toolCalls"
-                :messages="messages"
-              />
-              <ApprovalCard
-                :approval="pendingApproval"
-                :busy="isBusy"
-                :messages="messages"
-                @resolve="resolveApproval"
-              />
-            </div>
-          </section>
-        </Transition>
 
         <footer>
           {{ messages.footer }}
@@ -180,9 +222,9 @@ function setLocale(value: Locale): void {
   --paper: #faf9f6;
   --surface: #fff;
   --ink: #111827;
-  --accent: var(--client-accent-light, #1a365d);
-  --accent-foreground: var(--client-accent-foreground-light, #fff);
-  --accent-hover: var(--client-accent-hover-light, #142b4a);
+  --accent: #1a365d;
+  --accent-foreground: #fff;
+  --accent-hover: #142b4a;
   --alert-accent: #c2410c;
   --muted: #4b5563;
   --line: #e5e7eb;
@@ -208,9 +250,9 @@ function setLocale(value: Locale): void {
   --paper: #111827;
   --surface: #1f2937;
   --ink: #f9fafb;
-  --accent: var(--client-accent-dark, #60a5fa);
-  --accent-foreground: var(--client-accent-foreground-dark, #111827);
-  --accent-hover: var(--client-accent-hover-dark, #93c5fd);
+  --accent: #60a5fa;
+  --accent-foreground: #111827;
+  --accent-hover: #93c5fd;
   --alert-accent: #fb923c;
   --muted: #d1d5db;
   --line: #374151;
@@ -227,9 +269,16 @@ function setLocale(value: Locale): void {
   box-sizing: border-box;
 }
 
+html,
+body,
+#app {
+  height: 100%;
+}
+
 body {
+  min-height: 0;
+  overflow: hidden;
   min-width: 320px;
-  min-height: 100vh;
   margin: 0;
   background: var(--paper);
 }
@@ -258,29 +307,29 @@ p {
 }
 
 .page {
-  min-height: 100vh;
-  padding: 44px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding: 22px 24px 12px;
   font-family: var(--font-body), serif;
 }
 
 .page-shell {
-  width: min(100%, 800px);
+  display: flex;
+  width: min(100%, 768px);
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   margin-inline: auto;
 }
 
-.request-section,
-.results-section {
+.request-section {
+  flex: 0 0 auto;
   min-width: 0;
-}
-
-.results-section {
-  margin-top: 24px;
-}
-
-.results-content {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
+  margin-top: 12px;
 }
 
 .state-panel {
@@ -308,13 +357,104 @@ p {
 .state-panel {
   width: min(100%, 720px);
   min-height: 140px;
-  margin: 12vh auto 0;
+  margin: 12px auto;
   justify-content: center;
 }
 
 .state-panel p {
   margin: 0;
   line-height: 1.55;
+}
+
+.state-content {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.state-action {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.state-action:hover {
+  background: var(--surface-hover);
+}
+
+.state-action:focus-visible,
+.client-selection__option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.client-selection {
+  width: min(100%, 720px);
+  margin: 18px auto;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--micro-shadow);
+}
+
+.client-selection__prompt {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.client-selection h2 {
+  margin-bottom: 18px;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.client-selection__list {
+  display: grid;
+  gap: 10px;
+}
+
+.client-selection__option {
+  display: flex;
+  width: 100%;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface);
+  text-align: left;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.client-selection__option:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.client-selection__name {
+  font-weight: 700;
+}
+
+.client-selection__id {
+  color: var(--muted);
+  font-family: var(--font-mono), serif;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .loading-indicator {
@@ -335,9 +475,8 @@ p {
 }
 
 footer {
-  margin-top: 44px;
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
+  flex: 0 0 auto;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
@@ -351,19 +490,29 @@ footer {
 
 @media (max-width: 768px) {
   .page {
-    padding: 32px 20px 24px;
-  }
-
-  footer {
-    margin-top: 30px;
+    padding: 16px 18px 10px;
   }
 }
 
 @media (max-width: 420px) {
   .page {
-    padding: 26px 16px 20px;
+    padding: 12px 12px 8px;
+  }
+}
+
+@media (max-height: 580px) {
+  .page {
+    padding-top: 8px;
   }
 
+  .request-section {
+    margin-top: 6px;
+  }
+
+  footer {
+    margin-top: 6px;
+    padding-top: 5px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

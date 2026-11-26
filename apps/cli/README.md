@@ -35,7 +35,7 @@ ykassa-mcp --help
 ykassa-mcp --version
 ```
 
-- `init <name>` copies the bundled example client into `clients/<name>/` and prompts for the YooKassa shop ID and MCP token, which it writes to `.env`.
+- `init <name>` copies the bundled example client into `clients/<name>/` and prompts in an interactive terminal for the YooKassa shop ID and MCP token, which it writes to `.env`.
 - `start` runs the API server.
 - `web` serves the reference UI on port 5173.
 - `configurator` serves the client configurator on port 5174.

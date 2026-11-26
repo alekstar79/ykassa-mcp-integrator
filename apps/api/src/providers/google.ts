@@ -19,6 +19,7 @@ import { readErrorBody, SSEParserStream, tryParseJSON } from '../sse-parser.js';
 export function createGoogle(config: GoogleConfig): LLMProvider {
   return {
     id: 'google',
+    supportsRequiredToolChoice: true,
 
     async chat(request: ChatRequest): Promise<ChatStreamResult> {
       const baseURL = config.baseURL ?? 'https://generativelanguage.googleapis.com/v1beta';
@@ -43,6 +44,14 @@ export function createGoogle(config: GoogleConfig): LLMProvider {
             })),
           },
         ];
+        if (request.toolChoice === 'required') {
+          body.toolConfig = {
+            functionCallingConfig: {
+              mode: 'ANY',
+              allowedFunctionNames: request.tools.map((tool) => tool.name),
+            },
+          };
+        }
       }
 
       const httpResponse = await fetch(url, {

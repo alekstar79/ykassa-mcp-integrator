@@ -31,7 +31,7 @@ defineProps<{
     <fieldset class="field llm-settings">
       <legend>{{ messages.llmSettingsTitle }}</legend>
       <p class="field-hint">{{ messages.llmSettingsHint }}</p>
-      <div class="field-grid">
+      <div class="field-grid llm-grid">
         <div class="field">
           <label for="llm-provider">{{ messages.llmProviderLabel }}</label>
           <select id="llm-provider" v-model="form.llm.provider">

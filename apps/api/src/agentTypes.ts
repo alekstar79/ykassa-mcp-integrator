@@ -17,6 +17,7 @@ export interface ContinuationState {
   pendingToolCalls: Array<{ id: string; name: string; args: unknown }>;
   roundtrip: number;
   rejected?: boolean;
+  deterministicExecution?: boolean;
 }
 
 export interface ToolCallRecord {

@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
 import { createApproveRouter } from './routes/approve.js';
 import { createAskRouter } from './routes/ask.js';
+import { createChatHistoryRouter } from './routes/chatHistory.js';
 import { createClientPublicRouter } from './routes/clientPublic.js';
 import { errorHandler, corsMiddleware } from './http.js';
 import { CLIENTS_DIR, MCP_SERVER_URL } from './config.js';
@@ -24,6 +25,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use('/api/clients', createClientPublicRouter({ clientsDir }));
   app.use('/api', createAskRouter({ clientsDir, historyDir, mcpUrl }));
   app.use('/api', createApproveRouter({ clientsDir, historyDir, mcpUrl }));
+  app.use('/api', createChatHistoryRouter({ historyDir }));
   app.use(errorHandler);
 
   return app;

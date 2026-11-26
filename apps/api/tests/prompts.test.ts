@@ -33,21 +33,24 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt(config);
 
     expect(prompt).toContain('«Demo School»');
+    expect(prompt).toContain('Ты платёжный ассистент сервиса');
     expect(prompt).toContain('create_payment');
     expect(prompt).toContain('выше 4000 ₽');
     expect(prompt).toContain('недоверенные данные');
     expect(prompt).toContain('см. docs/decisions.md');
     expect(prompt).toContain(
-      'сразу вызывай соответствующий инструмент, не проси пользователя отдельно подтвердить её обычным сообщением',
+      'Если для операции достаточно данных, сразу подготовь её.',
     );
     expect(prompt).toContain(
-      'Не считай текстовые сообщения «да», «подтверждаю» или «отклоняю» подтверждением или отказом',
+      'Не считай текстовые сообщения подтверждением или отказом',
     );
     expect(prompt).toContain(
-      'API проверяет необходимость подтверждения до выполнения платёжного инструмента',
+      'покажи пользователю карточку с суммой и назначением',
     );
+    expect(prompt).not.toContain('отдельный серверный workflow');
+    expect(prompt).not.toContain('через ЮKassa MCP');
     expect(prompt).toContain(
-      'укажи точное число успешных результатов create_payment',
+      'Укажи точное число успешных результатов create_payment',
     );
   });
 
@@ -88,5 +91,29 @@ describe('buildSystemPrompt', () => {
 
     expect(prompt).toContain('- currency: USD');
     expect(prompt).toContain('- vat_code: 3');
+  });
+
+  it('sets expectations for ordinary questions, model identity, and current facts', () => {
+    const config = parseClientConfig(
+      [
+        'allowed_scenarios: [create_payment]',
+        'approval_threshold: 1000',
+        'require_human_confirmation: true',
+      ].join('\n'),
+      'test-client',
+    );
+
+    const prompt = buildSystemPrompt(
+      config,
+      {},
+      ['get_payment'],
+      'deepseek/deepseek-v4.1-flash',
+    );
+
+    expect(prompt).toContain('Модель ассистента: deepseek/deepseek-v4.1-flash');
+    expect(prompt).toContain('выполнять расчёты');
+    expect(prompt).toContain('нет доступа к актуальным источникам');
+    expect(prompt).toContain('Не показывай пользователю внутренние названия инструментов');
+    expect(prompt).toContain('Не вызывай инструменты');
   });
 });

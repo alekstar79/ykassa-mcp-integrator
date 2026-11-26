@@ -74,12 +74,9 @@ export async function appendChatHistory(
   );
 }
 
-export async function readRelevantChatHistory(
+export async function readChatHistory(
   clientName: string,
   sessionId: string,
-  query: string,
-  requestedLimit: number = DEFAULT_HISTORY_LIMIT,
-  excludedTurnId?: string,
   historyDir: string = CHAT_HISTORY_DIR,
 ): Promise<ChatHistoryMessage[]> {
   const filePath = historyFilePath(clientName, sessionId, historyDir);
@@ -91,10 +88,21 @@ export async function readRelevantChatHistory(
     throw error;
   }
 
-  const records = contents
+  return contents
     .split('\n')
     .filter((line) => line.length > 0)
     .map(parseHistoryMessage);
+}
+
+export async function readRelevantChatHistory(
+  clientName: string,
+  sessionId: string,
+  query: string,
+  requestedLimit: number = DEFAULT_HISTORY_LIMIT,
+  excludedTurnId?: string,
+  historyDir: string = CHAT_HISTORY_DIR,
+): Promise<ChatHistoryMessage[]> {
+  const records = await readChatHistory(clientName, sessionId, historyDir);
   const eligible = records.filter(
     (record) => record.turnId !== excludedTurnId,
   );

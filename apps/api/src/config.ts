@@ -34,6 +34,10 @@ export const MCP_SERVER_URL = 'https://mcp.yookassa.ru';
 
 const CLIENT_NAME_PATTERN = /^[a-z][a-z0-9-]{1,30}$/;
 
+export function isValidClientName(value: unknown): value is string {
+  return typeof value === 'string' && CLIENT_NAME_PATTERN.test(value);
+}
+
 export interface ClientSecrets {
   shopId: string;
   mcpToken: string;
@@ -53,7 +57,7 @@ export function validateClientName(value: unknown): string {
       'client is required. Pass the tenant name, e.g. {"client":"online-school"}',
     );
   }
-  if (typeof value !== 'string' || !CLIENT_NAME_PATTERN.test(value)) {
+  if (!isValidClientName(value)) {
     throw new HttpError(400, 'client must be a valid client name.');
   }
   return value;

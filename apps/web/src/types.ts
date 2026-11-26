@@ -28,6 +28,11 @@ export interface ApiResponse {
 
 export type { PublicClientConfig } from '@alekstar79/ykassa-contracts';
 
+export interface AvailableClient {
+  name: string;
+  display_name: string;
+}
+
 export interface PendingApproval {
   approvalId: string;
   actions: ProposedActionItem[];
@@ -42,6 +47,15 @@ export interface Attachment {
 export interface RequestPayload {
   message: string;
   attachment: Attachment | null;
+}
+
+export interface ChatTurn {
+  id: string;
+  createdAt: string;
+  request: string;
+  reply: string;
+  warning: string;
+  toolCalls: ToolCall[];
 }
 
 export interface UiDefaults extends ClientDefaults {

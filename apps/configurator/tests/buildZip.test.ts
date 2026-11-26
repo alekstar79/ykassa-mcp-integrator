@@ -374,7 +374,8 @@ describe('buildClientZip', () => {
 
     expect(readme).toContain('# online-school');
     expect(readme).toContain('Поместите папку');
-    expect(readme).toContain('http://localhost:5173/?client=online-school');
+    expect(readme).toContain('http://localhost:5173/');
+    expect(readme).not.toContain('?client=');
   });
 
   it('writes English onboarding instructions when the locale is English', async () => {
@@ -382,6 +383,7 @@ describe('buildClientZip', () => {
 
     expect(readme).toContain('# online-school');
     expect(readme).toContain('Place the `online-school/` folder');
-    expect(readme).toContain('http://localhost:5173/?client=online-school');
+    expect(readme).toContain('http://localhost:5173/');
+    expect(readme).not.toContain('?client=');
   });
 });

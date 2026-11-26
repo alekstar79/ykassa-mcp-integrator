@@ -3,18 +3,21 @@ import { computed } from 'vue';
 import type { Messages } from '../i18n';
 import { renderMarkdown } from '../utils/markdown';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   reply: string;
   warning: string;
   messages: Messages;
-}>();
+  showTitle?: boolean;
+}>(), {
+  showTitle: true,
+});
 
 const formattedReply = computed(() => renderMarkdown(props.reply));
 </script>
 
 <template>
   <section class="response-card" aria-live="polite">
-    <h2>{{ messages.responseTitle }}</h2>
+    <h2 v-if="showTitle">{{ messages.responseTitle }}</h2>
     <div class="response-content" v-html="formattedReply" />
     <p v-if="warning" class="response-warning">{{ warning }}</p>
   </section>
@@ -33,6 +36,10 @@ h2 {
   margin: 0 0 12px;
   font-size: 22px;
   font-weight: 600;
+}
+
+h2 + .response-content {
+  margin-top: 0;
 }
 
 .response-content {

@@ -32,6 +32,12 @@ describe('PreviewPanel', () => {
     expect(wrapper.find('.chat-input-container').exists()).toBe(true);
     expect(wrapper.find('.add-menu-button').exists()).toBe(true);
     expect(wrapper.find('.chat-send-button').exists()).toBe(true);
+    expect(wrapper.findAll('.preview-turn')).toHaveLength(3);
+    expect(wrapper.findAll('.preview-history-dots li')).toHaveLength(3);
+    expect(wrapper.findAll('.preview-history-popover li')).toHaveLength(3);
+    expect(
+      wrapper.find('.preview-history-popover li.is-current').text(),
+    ).toContain('Check the status of that link.');
     expect(wrapper.find('.file-drop-zone').exists()).toBe(false);
     expect(wrapper.find('.primary-button').exists()).toBe(false);
 

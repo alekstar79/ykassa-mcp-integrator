@@ -229,7 +229,7 @@ describe('resumeContinuation', () => {
         [],
         { provider: { id: 'test', chat: vi.fn() }, model: 'test-model' },
       ),
-    ).rejects.toThrow('description');
+    ).rejects.toThrow('Не удалось проверить параметры запроса.');
     expect(mocks.callTool).not.toHaveBeenCalled();
   });
 });

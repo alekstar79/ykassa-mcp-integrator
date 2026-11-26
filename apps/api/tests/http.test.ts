@@ -1,10 +1,11 @@
 import express from 'express';
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   corsMiddleware,
   errorHandler,
   errorMessage,
+  getCorsAllowedOrigins,
   HttpError,
   isRecord,
 } from '../src/http.js';
@@ -26,6 +27,10 @@ function createApp() {
   return app;
 }
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe('HTTP helpers', () => {
   it('recognizes plain records and rejects arrays and null', () => {
     expect(isRecord({ value: 1 })).toBe(true);
@@ -39,6 +44,10 @@ describe('HTTP helpers', () => {
   });
 
   it('sets CORS headers only for configured origins and answers preflight', async () => {
+    vi.stubEnv(
+      'CORS_ALLOWED_ORIGINS',
+      'http://localhost:5173,http://127.0.0.1:5173',
+    );
     const app = createApp();
     const allowed = await request(app)
       .get('/ok')
@@ -54,9 +63,35 @@ describe('HTTP helpers', () => {
       'http://localhost:5173',
     );
     expect(disallowed.headers['access-control-allow-origin']).toBeUndefined();
+    expect(disallowed.headers.vary).toContain('Origin');
     expect(preflight.status).toBe(204);
     expect(preflight.headers['access-control-allow-origin']).toBe(
       'http://127.0.0.1:5173',
+    );
+  });
+
+  it('accepts a configurable exact-origin list and rejects malformed entries', async () => {
+    vi.stubEnv(
+      'CORS_ALLOWED_ORIGINS',
+      'http://127.0.0.1:5174,https://demo.example.com',
+    );
+    const app = createApp();
+    const configured = await request(app)
+      .get('/ok')
+      .set('Origin', 'https://demo.example.com');
+    const oldDemoPort = await request(app)
+      .get('/ok')
+      .set('Origin', 'http://127.0.0.1:5173');
+
+    expect(configured.headers['access-control-allow-origin']).toBe(
+      'https://demo.example.com',
+    );
+    expect(oldDemoPort.headers['access-control-allow-origin']).toBeUndefined();
+    expect(() => getCorsAllowedOrigins('https://demo.example.com/path')).toThrow(
+      'exact http(s) origins',
+    );
+    expect(() => getCorsAllowedOrigins('not-an-origin')).toThrow(
+      'valid origins',
     );
   });
 

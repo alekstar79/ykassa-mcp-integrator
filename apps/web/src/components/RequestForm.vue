@@ -400,6 +400,9 @@ function submitRequest(): void {
     message: managerRequest.value.trim(),
     attachment: attachment.value,
   });
+  managerRequest.value = '';
+  removeAttachment();
+  void nextTick(resizeRequestInput);
 }
 </script>
 
@@ -550,6 +553,8 @@ function submitRequest(): void {
       ref="settingsDialog"
       class="settings-dialog"
       :aria-labelledby="'settings-dialog-title'"
+      @cancel.prevent="closeSettings"
+      @keydown.esc.prevent.stop="closeSettings"
       @click="handleDialogBackdropClick"
     >
       <form
