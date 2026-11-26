@@ -40,6 +40,7 @@ export function useDownload({
         name: form.value.name,
         shop_id: form.value.shop_id,
         mcp_token: form.value.mcp_token,
+        llm: { ...form.value.llm },
         clientMode: form.value.clientMode,
         allowed_scenarios: [...form.value.allowed_scenarios],
         approval_threshold: hasApprovalThreshold.value

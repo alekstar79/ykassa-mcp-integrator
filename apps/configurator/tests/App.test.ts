@@ -12,6 +12,13 @@ describe('App client mode selection', () => {
     ).toEqual(['reference-ui', 'custom-ui', 'messengers']);
     expect(wrapper.find('#ui-accent').exists()).toBe(true);
     expect(wrapper.find('#telegram-enabled').exists()).toBe(false);
+    expect(wrapper.find('#llm-provider').exists()).toBe(true);
+    expect(
+      Array.from(
+        wrapper.get<HTMLSelectElement>('#llm-provider').element.options,
+      ).map((option) => option.value),
+    ).toEqual(['openai', 'anthropic', 'google', 'ollama']);
+    expect(wrapper.find('#llm-api-key').attributes('type')).toBe('password');
 
     await modeSelect.setValue('messengers');
     expect(wrapper.find('#ui-accent').exists()).toBe(false);

@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-web",
   "description": "Vue 3 reference UI for the YooKassa MCP integrator. Built into @alekstar79/ykassa-mcp as static assets.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "license": "MIT",
   "type": "module",
   "private": true,
@@ -23,10 +23,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@alekstar79/ykassa-contracts": "^1.1.1",
+    "@alekstar79/ykassa-contracts": "^1.1.2",
+    "dompurify": "^3.5.0",
+    "markdown-it": "^15.0.3",
     "vue": "^3.5.45"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/coverage-v8": "^5.1.0",
     "jsdom": "^31.0.1",

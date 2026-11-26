@@ -23,6 +23,12 @@ export interface Messages {
   switchToDark: string;
   clientGroup: string;
   backendGroup: string;
+  llmSettingsTitle: string;
+  llmSettingsHint: string;
+  llmProviderLabel: string;
+  llmModelLabel: string;
+  llmBaseUrlLabel: string;
+  llmApiKeyLabel: string;
   messengersGroup: string;
   messengersHint: string;
   uiGroup: string;
@@ -127,6 +133,13 @@ export const translations = {
     switchToDark: 'Тёмная тема',
     clientGroup: 'Клиент',
     backendGroup: 'Backend',
+    llmSettingsTitle: 'Подключение языковой модели',
+    llmSettingsHint:
+      'Настройки будут записаны в .env клиента. Для Ollama API-ключ не нужен.',
+    llmProviderLabel: 'Провайдер',
+    llmModelLabel: 'Модель',
+    llmBaseUrlLabel: 'Базовый URL API (необязательно)',
+    llmApiKeyLabel: 'API-ключ',
     messengersGroup: 'Мессенджеры',
     messengersHint:
       'Для работающего бота укажите токен и хотя бы один разрешённый ID пользователя. Пустой список запрещает доступ всем.',
@@ -241,6 +254,13 @@ export const translations = {
     switchToDark: 'Dark theme',
     clientGroup: 'Client',
     backendGroup: 'Backend',
+    llmSettingsTitle: 'Language model connection',
+    llmSettingsHint:
+      'Settings are saved to the client .env. Ollama does not require an API key.',
+    llmProviderLabel: 'Provider',
+    llmModelLabel: 'Model',
+    llmBaseUrlLabel: 'API base URL (optional)',
+    llmApiKeyLabel: 'API key (optional)',
     messengersGroup: 'Messengers',
     messengersHint:
       'For a working bot, enter its token and at least one allowed user ID. An empty list denies access to everyone.',

@@ -28,6 +28,44 @@ defineProps<{
   <section class="form-group" :aria-labelledby="'backend-group-title'">
     <h2 id="backend-group-title">{{ messages.backendGroup }}</h2>
 
+    <fieldset class="field llm-settings">
+      <legend>{{ messages.llmSettingsTitle }}</legend>
+      <p class="field-hint">{{ messages.llmSettingsHint }}</p>
+      <div class="field-grid">
+        <div class="field">
+          <label for="llm-provider">{{ messages.llmProviderLabel }}</label>
+          <select id="llm-provider" v-model="form.llm.provider">
+            <option value="openai">OpenAI-compatible / OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+            <option value="ollama">Ollama</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="llm-model">{{ messages.llmModelLabel }}</label>
+          <input id="llm-model" v-model="form.llm.model" type="text" />
+        </div>
+        <div class="field">
+          <label for="llm-base-url">{{ messages.llmBaseUrlLabel }}</label>
+          <input
+            id="llm-base-url"
+            v-model="form.llm.base_url"
+            type="url"
+            autocomplete="url"
+          />
+        </div>
+        <div class="field">
+          <label for="llm-api-key">{{ messages.llmApiKeyLabel }}</label>
+          <input
+            id="llm-api-key"
+            v-model="form.llm.api_key"
+            type="password"
+            autocomplete="new-password"
+          />
+        </div>
+      </div>
+    </fieldset>
+
     <fieldset
       class="field scenario-field"
       :aria-invalid="Boolean(errorFor('allowed_scenarios'))"

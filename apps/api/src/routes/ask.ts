@@ -1,12 +1,21 @@
 import { Router, type Request, type Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { isClientVatCode } from '@alekstar79/ykassa-contracts';
-import { createProviderFromEnv } from '../llm.js';
+import { createProviderFromEnv, resolveLlmEnvironment } from '../llm.js';
 import { runAgent } from '../agent.js';
+import {
+  appendChatHistory,
+  CHAT_HISTORY_DIR,
+  formatChatHistoryForModel,
+  readRelevantChatHistory,
+  resolveSessionId,
+} from '../chatHistory.js';
 import {
   CLIENTS_DIR,
   loadClientConfig,
-  loadClientSecrets,
+  loadClientEnvironment,
   MCP_SERVER_URL,
+  parseClientSecrets,
   validateAttachment,
   validateClientName,
 } from '../config.js';
@@ -19,15 +28,17 @@ import type { ClientDefaults } from '../config.js';
 
 interface AskRouterOptions {
   clientsDir?: string;
+  historyDir?: string;
   mcpUrl?: string;
 }
 
 export function createAskRouter(options: AskRouterOptions = {}) {
   const router = Router();
   const clientsDir = options.clientsDir ?? CLIENTS_DIR;
+  const historyDir = options.historyDir ?? CHAT_HISTORY_DIR;
   const mcpUrl = options.mcpUrl ?? MCP_SERVER_URL;
   router.post('/ask', (req, res) =>
-    handleAsk(req, res, clientsDir, mcpUrl),
+    handleAsk(req, res, clientsDir, historyDir, mcpUrl),
   );
   return router;
 }
@@ -36,17 +47,23 @@ async function handleAsk(
   req: Request,
   res: Response,
   clientsDir: string,
+  historyDir: string,
   mcpUrl: string,
 ): Promise<void> {
   const clientName = validateClientName(req.body?.client);
+  const sessionId = resolveSessionId(req.body?.session_id);
+  const turnId = randomUUID();
   const overrides = parseOverrides(req.body?.overrides);
   const config = await loadClientConfig(clientName, clientsDir);
   const attachment = validateAttachment(
     req.body?.attachment,
     config.limits.max_attachment_kb,
   );
-  const secrets = await loadClientSecrets(clientName, clientsDir);
-  const { provider, model } = createProviderFromEnv();
+  const clientEnvironment = await loadClientEnvironment(clientName, clientsDir);
+  const secrets = parseClientSecrets(clientName, clientEnvironment);
+  const { provider, model } = createProviderFromEnv(
+    resolveLlmEnvironment(clientEnvironment),
+  );
 
   let messages: Array<{ role: 'user'; content: string }>;
   if (req.body?.messages !== undefined) {
@@ -129,6 +146,17 @@ async function handleAsk(
       {
         provider,
         model,
+        getChatHistory: async (query, limit) =>
+          formatChatHistoryForModel(
+            await readRelevantChatHistory(
+              clientName,
+              sessionId,
+              query,
+              limit,
+              turnId,
+              historyDir,
+            ),
+          ),
         logToolCall: async (entry) => appendCallLog(secrets.shopId, entry),
       },
     );
@@ -139,6 +167,16 @@ async function handleAsk(
     }
     throw error;
   }
+
+  const historyWarning = await saveChatTurn(
+    clientName,
+    sessionId,
+    turnId,
+    messages.map((message) => message.content),
+    result.reply,
+    result.toolCalls,
+    historyDir,
+  );
 
   if (result.requiresApproval !== undefined) {
     const primaryAction = result.requiresApproval.proposedActions.find(
@@ -151,11 +189,15 @@ async function handleAsk(
     }
     pendingApprovals.set(result.requiresApproval.approvalId, {
       client: clientName,
+      sessionId,
+      turnId,
       continuation: result.requiresApproval.continuation,
       createdAt: Date.now(),
     });
     res.status(202).json({
       reply: result.reply,
+      session_id: sessionId,
+      ...(historyWarning === undefined ? {} : { warning: historyWarning }),
       requires_approval: true,
       approval_id: result.requiresApproval.approvalId,
       proposed_action: {
@@ -171,12 +213,44 @@ async function handleAsk(
 
   res.status(200).json({
     reply: result.reply,
+    session_id: sessionId,
+    ...(historyWarning === undefined ? {} : { warning: historyWarning }),
     tool_calls: result.toolCalls,
     requires_approval: false,
   });
 }
 
 export const askRouter = createAskRouter();
+
+async function saveChatTurn(
+  clientName: string,
+  sessionId: string,
+  turnId: string,
+  userMessages: readonly string[],
+  reply: string,
+  toolCalls: AgentResult['toolCalls'],
+  historyDir: string,
+): Promise<string | undefined> {
+  try {
+    await appendChatHistory(
+      clientName,
+      sessionId,
+      [
+        ...userMessages.map((content) => ({
+          turnId,
+          role: 'user' as const,
+          content,
+        })),
+        { turnId, role: 'assistant', content: reply, toolCalls },
+      ],
+      historyDir,
+    );
+    return undefined;
+  } catch (error) {
+    console.error('[chat-history] Failed to save assistant reply.', error);
+    return 'Ответ сформирован, но не удалось сохранить историю сессии.';
+  }
+}
 
 function parseOverrides(value: unknown): Partial<ClientDefaults> | undefined {
   if (value === undefined) return undefined;

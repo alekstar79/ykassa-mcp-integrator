@@ -9,6 +9,8 @@ import type {
   ToolCall,
 } from '../types';
 
+const SESSION_STORAGE_PREFIX = 'yookassa-chat-session:';
+
 export function useClientApi(
   clientName: Ref<string>,
   locale: Ref<Locale> = ref('ru'),
@@ -52,6 +54,14 @@ export function useClientApi(
     errorKey.value = null;
     errorDetail.value = '';
     rawErrorMessage.value = '';
+  }
+
+  function persistSessionId(client: string, value: unknown): void {
+    if (typeof value !== 'string') return;
+    window.localStorage.setItem(
+      `${SESSION_STORAGE_PREFIX}${client}`,
+      value,
+    );
   }
 
   function setReply(reply: string | undefined, fallbackKey: MessageKey): void {
@@ -98,13 +108,18 @@ export function useClientApi(
     clearError();
     isBusy.value = true;
     const overrides = readUiOverrides();
+    const client = clientName.value;
+    const sessionId = window.localStorage.getItem(
+      `${SESSION_STORAGE_PREFIX}${client}`,
+    );
 
     try {
       const response = await fetch(`${API_URL}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client: clientName.value,
+          client,
+          ...(sessionId ? { session_id: sessionId } : {}),
           messages: [{ role: 'user', content: payload.message }],
           ...(overrides ? { overrides } : {}),
           ...(payload.attachment
@@ -127,6 +142,7 @@ export function useClientApi(
         return;
       }
 
+      persistSessionId(client, data.session_id);
       setReply(data.reply, 'processed');
       apiWarning.value = data.warning ?? '';
       toolCalls.value = data.tool_calls ?? [];
@@ -177,6 +193,7 @@ export function useClientApi(
         return;
       }
 
+      persistSessionId(clientName.value, data.session_id);
       setReply(
         data.reply,
         approved ? 'paymentApproved' : 'paymentRejected',

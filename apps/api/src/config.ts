@@ -39,6 +39,8 @@ export interface ClientSecrets {
   mcpToken: string;
 }
 
+export type ClientEnvironment = ReturnType<typeof parseDotenv>;
+
 export interface ClientAttachment {
   filename: string;
   content: string;
@@ -168,10 +170,10 @@ export async function loadClientConfig(
   return parseClientConfig(contents, clientName);
 }
 
-export async function loadClientSecrets(
+export async function loadClientEnvironment(
   clientName: string,
   clientsDir: string = CLIENTS_DIR,
-): Promise<ClientSecrets> {
+): Promise<ClientEnvironment> {
   const secretsPath = clientFilePath(
     clientsDir,
     clientName,
@@ -191,9 +193,15 @@ export async function loadClientSecrets(
     throw error;
   }
 
-  const secrets = parseDotenv(contents);
-  const shopId = (secrets.YOOKASSA_SHOP_ID || '').trim();
-  const mcpToken = (secrets.YOOKASSA_MCP_TOKEN || '').trim();
+  return parseDotenv(contents);
+}
+
+export function parseClientSecrets(
+  clientName: string,
+  environment: ClientEnvironment,
+): ClientSecrets {
+  const shopId = (environment.YOOKASSA_SHOP_ID || '').trim();
+  const mcpToken = (environment.YOOKASSA_MCP_TOKEN || '').trim();
   if (!shopId) {
     throw new HttpError(
       500,
@@ -207,6 +215,16 @@ export async function loadClientSecrets(
     );
   }
   return { shopId, mcpToken };
+}
+
+export async function loadClientSecrets(
+  clientName: string,
+  clientsDir: string = CLIENTS_DIR,
+): Promise<ClientSecrets> {
+  return parseClientSecrets(
+    clientName,
+    await loadClientEnvironment(clientName, clientsDir),
+  );
 }
 
 function clientFilePath(

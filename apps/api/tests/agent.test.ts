@@ -130,7 +130,7 @@ describe('runAgent', () => {
     const provider = {
       id: 'test',
       chat: vi.fn(async ({ messages }: { messages: ChatMessage[] }) => {
-        requests.push(messages);
+        requests.push([...messages]);
         return requests.length === 1
           ? streamResult(toolCall('call-1', 'get_payment', '{"id":"pay-1"}'))
           : streamResult([{ type: 'text-delta', text: 'Payment is paid.' }]);
@@ -461,5 +461,117 @@ describe('runAgent', () => {
     expect(mocks.callTool).toHaveBeenCalledTimes(5);
     expect(result.reply).toContain('лимит итераций');
     expect(result.toolCalls).toHaveLength(5);
+  });
+
+  it('retrieves prior chat context only when the model calls the history tool', async () => {
+    const requests: ChatMessage[][] = [];
+    const getChatHistory = vi.fn(async (query: string, limit: number) =>
+      JSON.stringify([
+        {
+          role: 'assistant',
+          content: 'Платёжная ссылка создана.',
+          tool_calls: [
+            {
+              name: 'create_payment',
+              args: { amount: { value: '1000', currency: 'RUB' } },
+              result: '{"id":"pay-older"}',
+            },
+          ],
+        },
+      ]),
+    );
+    const provider = {
+      id: 'test',
+      chat: vi.fn(async ({ messages }: { messages: ChatMessage[] }) => {
+        requests.push([...messages]);
+        if (requests.length === 1) {
+          return streamResult(
+            toolCall(
+              'history-call',
+              'get_chat_history',
+              '{"query":"последняя платежная ссылка","limit":4}',
+            ),
+          );
+        }
+        if (requests.length === 2) {
+          return streamResult(
+            toolCall(
+              'payment-call',
+              'get_payment',
+              '{"id":"pay-older"}',
+            ),
+          );
+        }
+        return streamResult([
+          { type: 'text-delta', text: 'Статус платежа проверен.' },
+          { type: 'finish', finishReason: 'stop' },
+        ]);
+      }),
+    };
+
+    const result = await runAgent(
+      [
+        {
+          role: 'user',
+          content: 'Проверь статус оплаты по последней платежной ссылке.',
+        },
+      ],
+      config,
+      { provider, model: 'test-model', getChatHistory },
+    );
+
+    expect(requests[0]).not.toContainEqual(
+      expect.objectContaining({ content: expect.stringContaining('pay-older') }),
+    );
+    expect(getChatHistory).toHaveBeenCalledWith(
+      'последняя платежная ссылка',
+      4,
+    );
+    expect(requests[1]).toContainEqual({
+      role: 'tool',
+      toolCallId: 'history-call',
+      content: expect.stringContaining('pay-older'),
+    });
+    expect(mocks.callTool).toHaveBeenCalledWith({
+      name: 'get_payment',
+      arguments: { id: 'pay-older' },
+    });
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.reply).toBe('Статус платежа проверен.');
+  });
+
+  it('does not execute other tools in the same round as history retrieval', async () => {
+    const provider = {
+      id: 'test',
+      chat: vi
+        .fn()
+        .mockResolvedValueOnce(
+          streamResult([
+            { type: 'tool-call-start', toolCallId: 'history-call', toolName: 'get_chat_history' },
+            { type: 'tool-call-delta', toolCallId: 'history-call', args: '{"query":"last payment"}' },
+            { type: 'tool-call-start', toolCallId: 'payment-call', toolName: 'get_payment' },
+            { type: 'tool-call-delta', toolCallId: 'payment-call', args: '{"id":"pay-1"}' },
+            { type: 'finish', finishReason: 'tool-calls' },
+          ]),
+        )
+        .mockResolvedValueOnce(
+          streamResult([
+            { type: 'text-delta', text: 'Please retry after reviewing history.' },
+            { type: 'finish', finishReason: 'stop' },
+          ]),
+        ),
+    };
+
+    await runAgent(
+      [{ role: 'user', content: 'Check the last payment.' }],
+      config,
+      {
+        provider,
+        model: 'test-model',
+        getChatHistory: async () => 'Previous payment: pay-1',
+      },
+    );
+
+    expect(mocks.callTool).not.toHaveBeenCalled();
   });
 });

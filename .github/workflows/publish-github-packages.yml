@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Version tag to publish and release, for example v1.1.1
+        description: Version tag to publish and release, for example v1.1.2
         required: true
         type: string
       release_only:
@@ -34,7 +34,7 @@ jobs:
       - name: Require a version tag
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Expected a release tag such as v1.1.1, got '$RELEASE_TAG'."
+            echo "::error::Expected a release tag such as v1.1.2, got '$RELEASE_TAG'."
             exit 1
           fi
           expected="${RELEASE_TAG#v}"
@@ -104,7 +104,7 @@ jobs:
       - name: Require a version tag
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Expected a release tag such as v1.1.1, got '$RELEASE_TAG'."
+            echo "::error::Expected a release tag such as v1.1.2, got '$RELEASE_TAG'."
             exit 1
           fi
 

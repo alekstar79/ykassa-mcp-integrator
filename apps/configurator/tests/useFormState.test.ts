@@ -16,6 +16,12 @@ describe('useFormState', () => {
       name: '',
       shop_id: '',
       mcp_token: '',
+      llm: {
+        provider: '',
+        model: '',
+        base_url: '',
+        api_key: '',
+      },
       clientMode: 'reference-ui',
       allowed_scenarios: [],
       approval_threshold: 0,

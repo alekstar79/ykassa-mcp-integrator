@@ -21,6 +21,8 @@ export interface ProposedAction {
 
 export interface ApprovalRequiredResponse {
   reply: string;
+  session_id?: string;
+  warning?: string;
   requires_approval: true;
   approval_id: string;
   proposed_action: ProposedAction;
@@ -30,6 +32,8 @@ export interface ApprovalRequiredResponse {
 
 export interface AskCompleteResponse {
   reply: string;
+  session_id?: string;
+  warning?: string;
   requires_approval: false;
   tool_calls: ToolCallResult[];
 }
@@ -51,6 +55,7 @@ export interface MessengerApiClient {
     client: string,
     messages: SessionMessage[],
     attachment?: MessengerAttachmentPayload,
+    sessionId?: string,
   ): Promise<AskResponse>;
   approve(approvalId: string, approved: boolean): Promise<ApproveResponse>;
   getPublicClient(client: string): Promise<PublicClientSummary>;
@@ -74,12 +79,13 @@ export function createApiClient(
 ): MessengerApiClient {
   const baseUrl = apiBaseUrl.replace(/\/+$/, '');
   return {
-    async ask(client, messages, attachment) {
+    async ask(client, messages, attachment, sessionId) {
       const body: Record<string, unknown> = {
         client,
         messages,
       };
       if (attachment !== undefined) body.attachment = attachment;
+      if (sessionId !== undefined) body.session_id = sessionId;
       const response = await fetcher(`${baseUrl}/api/ask`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -152,12 +158,18 @@ function parseAskComplete(value: unknown): AskCompleteResponse {
     !isRecord(value) ||
     typeof value.reply !== 'string' ||
     value.requires_approval !== false ||
+    (value.session_id !== undefined && typeof value.session_id !== 'string') ||
+    (value.warning !== undefined && typeof value.warning !== 'string') ||
     !isToolCallArray(value.tool_calls)
   ) {
     throw new ApiClientError(200, 'API returned an invalid ask response.');
   }
   return {
     reply: value.reply,
+    ...(typeof value.session_id === 'string'
+      ? { session_id: value.session_id }
+      : {}),
+    ...(typeof value.warning === 'string' ? { warning: value.warning } : {}),
     requires_approval: false,
     tool_calls: value.tool_calls,
   };
@@ -168,6 +180,8 @@ function parseApprovalRequired(value: unknown): ApprovalRequiredResponse {
     !isRecord(value) ||
     typeof value.reply !== 'string' ||
     value.requires_approval !== true ||
+    (value.session_id !== undefined && typeof value.session_id !== 'string') ||
+    (value.warning !== undefined && typeof value.warning !== 'string') ||
     typeof value.approval_id !== 'string' ||
     value.approval_id.length === 0 ||
     !isProposedAction(value.proposed_action) ||
@@ -179,6 +193,10 @@ function parseApprovalRequired(value: unknown): ApprovalRequiredResponse {
   }
   return {
     reply: value.reply,
+    ...(typeof value.session_id === 'string'
+      ? { session_id: value.session_id }
+      : {}),
+    ...(typeof value.warning === 'string' ? { warning: value.warning } : {}),
     requires_approval: true,
     approval_id: value.approval_id,
     proposed_action: value.proposed_action,

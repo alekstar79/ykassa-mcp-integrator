@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   CLIENTS_DIR,
   loadClientConfig,
+  loadClientEnvironment,
   loadClientSecrets,
   parseClientConfig,
   validateAttachment,
@@ -213,6 +214,29 @@ describe('client config and secrets files', () => {
     await expect(loadClientSecrets(clientName)).rejects.toThrow(
       'YOOKASSA_MCP_TOKEN is missing or empty',
     );
+  });
+
+  it('loads client LLM settings from the same private environment file', async () => {
+    const directory = await createClientFixture();
+    const clientName = path.basename(directory);
+    await writeFile(
+      path.join(directory, '.env'),
+      [
+        'YOOKASSA_SHOP_ID=test-shop-only',
+        'YOOKASSA_MCP_TOKEN=test-token-only',
+        'LLM_PROVIDER=openai',
+        'LLM_MODEL=test-model',
+        'LLM_BASE_URL=https://llm.example/v1',
+        'LLM_API_KEY=test-llm-key',
+      ].join('\n'),
+    );
+
+    await expect(loadClientEnvironment(clientName)).resolves.toMatchObject({
+      LLM_PROVIDER: 'openai',
+      LLM_MODEL: 'test-model',
+      LLM_BASE_URL: 'https://llm.example/v1',
+      LLM_API_KEY: 'test-llm-key',
+    });
   });
 
   it('applies the configured attachment size limit in UTF-8 bytes', async () => {

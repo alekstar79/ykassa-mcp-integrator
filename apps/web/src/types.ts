@@ -17,6 +17,7 @@ export interface ToolCall {
 export interface ApiResponse {
   reply?: string;
   error?: string;
+  session_id?: string;
   requires_approval?: boolean;
   approval_id?: string;
   proposed_action?: ProposedActionItem;

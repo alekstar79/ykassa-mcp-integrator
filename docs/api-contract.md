@@ -15,6 +15,7 @@ Preferred form:
 ```json
 {
   "client": "online-school",
+  "session_id": "123e4567-e89b-42d3-a456-426614174000",
   "messages": [
     { "role": "user", "content": "Create a payment link for 100 RUB" }
   ],
@@ -30,6 +31,12 @@ Preferred form:
   }
 }
 ```
+
+`session_id` is optional on the first request. The API creates one and returns
+it in the response. Clients should persist it and send it with every later
+request in the same conversation. Each client/session pair has a separate
+server-side transcript. The transcript is not added to model context by
+default; the agent retrieves relevant earlier turns on demand.
 
 `attachment` is optional. Its UTF-8 content size is limited by the client's
 `limits.max_attachment_kb`; the filename may contain at most 255 characters.
@@ -59,6 +66,7 @@ For backwards compatibility, callers may instead send `client`, `amount`, and
 ```json
 {
   "reply": "Request processed.",
+  "session_id": "123e4567-e89b-42d3-a456-426614174000",
   "tool_calls": [],
   "requires_approval": false
 }
@@ -69,6 +77,7 @@ For backwards compatibility, callers may instead send `client`, `amount`, and
 ```json
 {
   "reply": "Please review this operation.",
+  "session_id": "123e4567-e89b-42d3-a456-426614174000",
   "requires_approval": true,
   "approval_id": "approval-id",
   "proposed_action": {
@@ -123,6 +132,7 @@ can be resolved only once and expires after 15 minutes.
 ```json
 {
   "reply": "Payment approved.",
+  "session_id": "123e4567-e89b-42d3-a456-426614174000",
   "approved": true,
   "tool_calls": [],
   "requires_approval": false

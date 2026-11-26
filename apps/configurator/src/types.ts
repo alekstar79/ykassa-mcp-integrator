@@ -13,6 +13,7 @@ export const CLIENT_MODES = [
   'messengers',
 ] as const;
 export type ClientMode = (typeof CLIENT_MODES)[number];
+export type LlmProviderName = '' | 'openai' | 'anthropic' | 'google' | 'ollama';
 export type NumericField =
   | 'approval_threshold'
   | 'limits.max_messages'
@@ -20,6 +21,13 @@ export type NumericField =
 export type ClientMessengerPlatform = keyof ClientMessengersConfig;
 export type ClientMessengerLocale =
   ClientMessengersConfig['telegram']['locale'];
+
+export interface LlmFormState {
+  provider: LlmProviderName;
+  model: string;
+  base_url: string;
+  api_key: string;
+}
 
 export interface MessengerFormState {
   enabled: boolean;
@@ -32,6 +40,7 @@ export interface FormState {
   name: string;
   shop_id: string;
   mcp_token: string;
+  llm: LlmFormState;
   clientMode: ClientMode;
   allowed_scenarios: string[];
   approval_threshold: number;

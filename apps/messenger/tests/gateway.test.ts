@@ -173,18 +173,22 @@ function createHarness(options: {
     client: string;
     messages: Array<{ role: 'user'; content: string }>;
     attachment?: { filename: string; content: string };
+    sessionId?: string;
   }> = [];
   const approveCalls: Array<{ approvalId: string; approved: boolean }> = [];
   const auditEntries: MessengerAuditEntry[] = [];
   const adapter = new FakeAdapter();
   const api: MessengerApiClient = {
-    async ask(client, messages, attachment) {
+    async ask(client, messages, attachment, sessionId) {
       askCalls.push({
         client,
         messages,
         ...(attachment === undefined ? {} : { attachment }),
+        ...(sessionId === undefined ? {} : { sessionId }),
       });
-      if (options.ask !== undefined) return options.ask(client, messages, attachment);
+      if (options.ask !== undefined) {
+        return options.ask(client, messages, attachment, sessionId);
+      }
       return askResponse;
     },
     async approve(approvalId, approved) {
@@ -487,6 +491,9 @@ describe('MessengerGateway', () => {
       [{ role: 'user', content: 'Create a payment link for 100 RUB.' }],
       [{ role: 'user', content: 'Show the status of payment pay-123.' }],
     ]);
+    expect(harness.askCalls[1]?.sessionId).toBe(
+      harness.askCalls[0]?.sessionId,
+    );
   });
 
   it('pairs a MAX file request with the following separate attachment', async () => {

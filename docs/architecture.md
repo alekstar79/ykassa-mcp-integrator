@@ -14,6 +14,7 @@ flowchart LR
     API <-->|tools / results| MCP["YooKassa MCP"]
     API <-->|chat / tool calls| LLM["LLM provider"]
     API -->|Audit| Logs["logs/mcp-calls.jsonl"]
+    API <-->|session transcript| History["logs/chat-history/<client>/<session>.jsonl"]
     Gateway -->|Audit| MessengerLogs["logs/messenger-actions.jsonl"]
 ```
 
@@ -31,6 +32,15 @@ current MCP tool list, and sends eligible tools and the manager request to the
 configured LLM provider. The API validates proposed tool calls and applies the
 approval policy before executing payment tools. MCP results are recorded in
 the API audit log; messenger events are recorded separately by the gateway.
+
+Each `/api/ask` conversation uses a `session_id` returned by the API. The
+Reference UI persists it per client, and Messenger keeps it for the active
+chat session. User messages, assistant replies, and payment-tool results are
+stored in a client-scoped JSONL transcript under `logs/chat-history/`. The
+transcript is not sent with every request. When a request refers to earlier
+conversation context, the LLM can call the API's internal
+`get_chat_history` tool. The API returns recent or lexically relevant turns
+from that same client/session; this tool does not call YooKassa MCP.
 
 ## Enrichment layer
 

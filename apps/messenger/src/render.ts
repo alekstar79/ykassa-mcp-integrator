@@ -130,6 +130,7 @@ export function renderAskResponse(
   locale: MessengerLocale,
 ): RenderedMessage {
   const parts = [response.reply];
+  if (response.warning !== undefined) parts.push(response.warning);
   const buttons: Button[] = [];
   const seenUrls = new Set<string>();
 
@@ -168,6 +169,7 @@ export function renderApprovalCard(
   });
   const text = [
     response.reply,
+    response.warning,
     localized(locale, 'approvalTitle'),
     ...actionLines,
   ]

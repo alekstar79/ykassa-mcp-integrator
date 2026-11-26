@@ -4,6 +4,30 @@ import { createOllama } from './providers/ollama.js';
 import { createOpenAI } from './providers/openai.js';
 import type { LLMProvider, ProviderConfig, ProviderName } from './types.js';
 
+type LlmEnvironmentKey =
+  | 'LLM_PROVIDER'
+  | 'LLM_MODEL'
+  | 'LLM_API_KEY'
+  | 'LLM_BASE_URL';
+
+export function resolveLlmEnvironment(
+  clientEnvironment: Readonly<Record<string, string>>,
+  fallbackEnvironment: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const resolveValue = (key: LlmEnvironmentKey): string | undefined => {
+    const clientValue = clientEnvironment[key]?.trim();
+    const fallbackValue = fallbackEnvironment[key]?.trim();
+    return clientValue || fallbackValue || undefined;
+  };
+
+  return {
+    LLM_PROVIDER: resolveValue('LLM_PROVIDER'),
+    LLM_MODEL: resolveValue('LLM_MODEL'),
+    LLM_API_KEY: resolveValue('LLM_API_KEY'),
+    LLM_BASE_URL: resolveValue('LLM_BASE_URL'),
+  };
+}
+
 export function createProviderFromEnv(env: NodeJS.ProcessEnv = process.env): ProviderConfig {
   const providerName = (env.LLM_PROVIDER ?? 'openai').toLowerCase() as ProviderName;
   const model = env.LLM_MODEL;

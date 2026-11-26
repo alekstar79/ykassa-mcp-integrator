@@ -51,6 +51,7 @@ const approval = {
   ],
   tool_calls: [],
 };
+const SESSION_ID = '123e4567-e89b-42d3-a456-426614174000';
 
 describe('messenger API client', () => {
   it('posts the expected messages DTO and parses a 200 response', async () => {
@@ -75,6 +76,27 @@ describe('messenger API client', () => {
     await expect(
       api.ask('online-school', [{ role: 'user', content: 'Pay 100 RUB' }]),
     ).resolves.toEqual(approval);
+  });
+
+  it('sends and parses a conversation session ID', async () => {
+    const { api, requests } = createTestClient(
+      response(200, { ...completed, session_id: SESSION_ID }),
+    );
+
+    await expect(
+      api.ask(
+        'online-school',
+        [{ role: 'user', content: 'Check the previous payment' }],
+        undefined,
+        SESSION_ID,
+      ),
+    ).resolves.toMatchObject({ session_id: SESSION_ID });
+
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
+      client: 'online-school',
+      messages: [{ role: 'user', content: 'Check the previous payment' }],
+      session_id: SESSION_ID,
+    });
   });
 
   it('parses both complete and repeated-approval responses from approve', async () => {

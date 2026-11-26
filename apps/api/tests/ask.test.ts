@@ -3,9 +3,16 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LLMProvider } from '../src/types.js';
 import { runAgent } from '../src/agent.js';
-import { createProviderFromEnv } from '../src/llm.js';
+import {
+  createProviderFromEnv,
+  resolveLlmEnvironment,
+} from '../src/llm.js';
 import type { ClientConfig } from '../src/config.js';
-import { loadClientConfig, loadClientSecrets } from '../src/config.js';
+import {
+  loadClientConfig,
+  loadClientEnvironment,
+  parseClientSecrets,
+} from '../src/config.js';
 import { appendCallLog } from '../src/audit.js';
 import { errorHandler, HttpError } from '../src/http.js';
 import { pendingApprovals } from '../src/pendingApprovals.js';
@@ -15,24 +22,40 @@ import { ToolValidationError } from '../src/validateToolCall.js';
 const mocks = vi.hoisted(() => ({
   runAgent: vi.fn(),
   createProviderFromEnv: vi.fn(),
+  resolveLlmEnvironment: vi.fn(),
   loadClientConfig: vi.fn(),
-  loadClientSecrets: vi.fn(),
+  loadClientEnvironment: vi.fn(),
+  parseClientSecrets: vi.fn(),
   appendCallLog: vi.fn(),
+  appendChatHistory: vi.fn(),
+  readRelevantChatHistory: vi.fn(),
+  formatChatHistoryForModel: vi.fn(),
 }));
 
 vi.mock('../src/agent.js', () => ({ runAgent: mocks.runAgent }));
 vi.mock('../src/llm.js', () => ({
   createProviderFromEnv: mocks.createProviderFromEnv,
+  resolveLlmEnvironment: mocks.resolveLlmEnvironment,
 }));
 vi.mock('../src/config.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/config.js')>();
   return {
     ...actual,
     loadClientConfig: mocks.loadClientConfig,
-    loadClientSecrets: mocks.loadClientSecrets,
+    loadClientEnvironment: mocks.loadClientEnvironment,
+    parseClientSecrets: mocks.parseClientSecrets,
   };
 });
 vi.mock('../src/audit.js', () => ({ appendCallLog: mocks.appendCallLog }));
+vi.mock('../src/chatHistory.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/chatHistory.js')>();
+  return {
+    ...actual,
+    appendChatHistory: mocks.appendChatHistory,
+    readRelevantChatHistory: mocks.readRelevantChatHistory,
+    formatChatHistoryForModel: mocks.formatChatHistoryForModel,
+  };
+});
 
 const config: ClientConfig = {
   allowed_scenarios: ['create_payment', 'get_payment'],
@@ -79,14 +102,24 @@ describe('POST /ask', () => {
     pendingApprovals.clear();
     vi.clearAllMocks();
     vi.mocked(loadClientConfig).mockResolvedValue(config);
-    vi.mocked(loadClientSecrets).mockResolvedValue({
+    vi.mocked(loadClientEnvironment).mockResolvedValue({});
+    vi.mocked(parseClientSecrets).mockReturnValue({
       shopId: 'test-shop-only',
       mcpToken: 'test-token-only',
     });
     vi.mocked(appendCallLog).mockResolvedValue(undefined);
+    mocks.appendChatHistory.mockResolvedValue(undefined);
+    mocks.readRelevantChatHistory.mockResolvedValue([]);
+    mocks.formatChatHistoryForModel.mockReturnValue('No previous messages.');
     vi.mocked(createProviderFromEnv).mockReturnValue({
       provider,
       model: 'test-model',
+    });
+    vi.mocked(resolveLlmEnvironment).mockReturnValue({
+      LLM_PROVIDER: 'openai',
+      LLM_MODEL: 'test-model',
+      LLM_API_KEY: 'test-llm-key',
+      LLM_BASE_URL: 'https://llm.example/v1',
     });
   });
 
@@ -97,7 +130,22 @@ describe('POST /ask', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('client is required');
-    expect(loadClientSecrets).not.toHaveBeenCalled();
+    expect(loadClientEnvironment).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid session IDs before loading client data', async () => {
+    const response = await request(createApp())
+      .post('/ask')
+      .send({
+        client: 'online-school',
+        session_id: '../outside',
+        messages: [{ role: 'user', content: 'hello' }],
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('session_id');
+    expect(loadClientConfig).not.toHaveBeenCalled();
+    expect(mocks.appendChatHistory).not.toHaveBeenCalled();
   });
 
   it('returns 400 when messages are missing', async () => {
@@ -143,7 +191,7 @@ describe('POST /ask', () => {
       });
     expect(response.status).toBe(400);
     expect(response.body.error).toContain('100 KB');
-    expect(loadClientSecrets).not.toHaveBeenCalled();
+    expect(loadClientEnvironment).not.toHaveBeenCalled();
   });
 
   it('uses the client-specific message and attachment limits', async () => {
@@ -191,6 +239,9 @@ describe('POST /ask', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       reply: 'Запрос обработан.',
+      session_id: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      ),
       tool_calls: [],
       requires_approval: false,
     });
@@ -199,6 +250,25 @@ describe('POST /ask', () => {
       { role: 'user', content: 'Покажи платежи' },
     ]);
     const dependencies = vi.mocked(runAgent).mock.calls[0]?.[2];
+    expect(dependencies?.getChatHistory).toBeTypeOf('function');
+    await dependencies?.getChatHistory?.('earlier payment', 4);
+    const sessionId = response.body.session_id as string;
+    expect(mocks.readRelevantChatHistory).toHaveBeenCalledWith(
+      'online-school',
+      sessionId,
+      'earlier payment',
+      4,
+      expect.any(String),
+      expect.any(String),
+    );
+    expect(mocks.appendChatHistory).toHaveBeenCalledTimes(1);
+    expect(mocks.appendChatHistory.mock.calls[0]?.[2]).toMatchObject([
+      { role: 'user', content: 'Покажи платежи' },
+      { role: 'assistant', content: 'Запрос обработан.', toolCalls: [] },
+    ]);
+    expect(mocks.appendChatHistory.mock.calls[0]?.[2][0]?.turnId).toBe(
+      mocks.appendChatHistory.mock.calls[0]?.[2][1]?.turnId,
+    );
     await dependencies?.logToolCall?.({
       tool: 'get_payment',
       args: { id: 'pay-test' },
@@ -209,6 +279,42 @@ describe('POST /ask', () => {
       args: { id: 'pay-test' },
       result: 'ok',
     });
+  });
+
+  it('resolves LLM settings from the selected client environment', async () => {
+    const clientEnvironment = {
+      LLM_PROVIDER: 'openai',
+      LLM_MODEL: 'client-model',
+      LLM_API_KEY: 'test-client-key',
+      LLM_BASE_URL: 'https://llm.example/v1',
+    };
+    const resolvedEnvironment = {
+      LLM_PROVIDER: 'openai',
+      LLM_MODEL: 'client-model',
+      LLM_API_KEY: 'test-client-key',
+      LLM_BASE_URL: 'https://llm.example/v1',
+    };
+    vi.mocked(loadClientEnvironment).mockResolvedValue(clientEnvironment);
+    vi.mocked(resolveLlmEnvironment).mockReturnValue(resolvedEnvironment);
+    vi.mocked(runAgent).mockResolvedValue({
+      reply: 'Запрос обработан.',
+      toolCalls: [],
+    });
+
+    const response = await request(createApp())
+      .post('/ask')
+      .send({
+        client: 'online-school',
+        messages: [{ role: 'user', content: 'hello' }],
+      });
+
+    expect(response.status).toBe(200);
+    expect(loadClientEnvironment).toHaveBeenCalledWith(
+      'online-school',
+      expect.any(String),
+    );
+    expect(resolveLlmEnvironment).toHaveBeenCalledWith(clientEnvironment);
+    expect(createProviderFromEnv).toHaveBeenCalledWith(resolvedEnvironment);
   });
 
   it('validates and forwards defaults overrides to the agent', async () => {

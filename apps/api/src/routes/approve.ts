@@ -1,11 +1,18 @@
 import { Router, type Request, type Response } from 'express';
-import { createProviderFromEnv } from '../llm.js';
+import { createProviderFromEnv, resolveLlmEnvironment } from '../llm.js';
 import { runAgent } from '../agent.js';
+import {
+  appendChatHistory,
+  CHAT_HISTORY_DIR,
+  formatChatHistoryForModel,
+  readRelevantChatHistory,
+} from '../chatHistory.js';
 import {
   CLIENTS_DIR,
   loadClientConfig,
-  loadClientSecrets,
+  loadClientEnvironment,
   MCP_SERVER_URL,
+  parseClientSecrets,
 } from '../config.js';
 import { appendCallLog } from '../audit.js';
 import { HttpError, isRecord } from '../http.js';
@@ -13,15 +20,17 @@ import { pendingApprovals } from '../pendingApprovals.js';
 
 interface ApproveRouterOptions {
   clientsDir?: string;
+  historyDir?: string;
   mcpUrl?: string;
 }
 
 export function createApproveRouter(options: ApproveRouterOptions = {}) {
   const router = Router();
   const clientsDir = options.clientsDir ?? CLIENTS_DIR;
+  const historyDir = options.historyDir ?? CHAT_HISTORY_DIR;
   const mcpUrl = options.mcpUrl ?? MCP_SERVER_URL;
   router.post('/approve', (req, res) =>
-    handleApprove(req, res, clientsDir, mcpUrl),
+    handleApprove(req, res, clientsDir, historyDir, mcpUrl),
   );
   return router;
 }
@@ -30,6 +39,7 @@ async function handleApprove(
   req: Request,
   res: Response,
   clientsDir: string,
+  historyDir: string,
   mcpUrl: string,
 ): Promise<void> {
   if (
@@ -57,8 +67,14 @@ async function handleApprove(
   pendingApprovals.delete(req.body.approval_id);
 
   const config = await loadClientConfig(pending.client, clientsDir);
-  const secrets = await loadClientSecrets(pending.client, clientsDir);
-  const { provider, model } = createProviderFromEnv();
+  const clientEnvironment = await loadClientEnvironment(
+    pending.client,
+    clientsDir,
+  );
+  const secrets = parseClientSecrets(pending.client, clientEnvironment);
+  const { provider, model } = createProviderFromEnv(
+    resolveLlmEnvironment(clientEnvironment),
+  );
   const result = await runAgent(
     [],
     {
@@ -73,10 +89,42 @@ async function handleApprove(
     {
       provider,
       model,
+      getChatHistory: async (query, limit) =>
+        formatChatHistoryForModel(
+          await readRelevantChatHistory(
+            pending.client,
+            pending.sessionId,
+            query,
+            limit,
+            pending.turnId,
+            historyDir,
+          ),
+        ),
       logToolCall: async (entry) => appendCallLog(secrets.shopId, entry),
     },
     { ...pending.continuation, rejected: !req.body.approved },
   );
+
+  let historyWarning: string | undefined;
+  try {
+    await appendChatHistory(
+      pending.client,
+      pending.sessionId,
+      [
+        {
+          turnId: pending.turnId,
+          role: 'assistant',
+          content: result.reply,
+          toolCalls: result.toolCalls,
+        },
+      ],
+      historyDir,
+    );
+  } catch (error) {
+    console.error('[chat-history] Failed to save approval reply.', error);
+    historyWarning =
+      'Ответ сформирован, но не удалось сохранить историю сессии.';
+  }
 
   if (result.requiresApproval !== undefined) {
     const primaryAction = result.requiresApproval.proposedActions.find(
@@ -89,11 +137,15 @@ async function handleApprove(
     }
     pendingApprovals.set(result.requiresApproval.approvalId, {
       client: pending.client,
+      sessionId: pending.sessionId,
+      turnId: pending.turnId,
       continuation: result.requiresApproval.continuation,
       createdAt: Date.now(),
     });
     res.status(202).json({
       reply: result.reply,
+      session_id: pending.sessionId,
+      ...(historyWarning === undefined ? {} : { warning: historyWarning }),
       requires_approval: true,
       approval_id: result.requiresApproval.approvalId,
       proposed_action: {
@@ -109,6 +161,8 @@ async function handleApprove(
 
   res.status(200).json({
     reply: result.reply,
+    session_id: pending.sessionId,
+    ...(historyWarning === undefined ? {} : { warning: historyWarning }),
     approved: req.body.approved,
     tool_calls: result.toolCalls,
     requires_approval: false,

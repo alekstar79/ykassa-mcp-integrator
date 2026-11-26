@@ -2,6 +2,8 @@ import type { ContinuationState } from './agentTypes.js';
 
 export interface PendingApproval {
   client: string;
+  sessionId: string;
+  turnId: string;
   continuation: ContinuationState;
   createdAt: number;
 }

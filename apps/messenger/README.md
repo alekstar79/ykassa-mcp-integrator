@@ -14,7 +14,7 @@ For local development from the repository root:
 
 ```bash
 npm run build --workspace=@alekstar79/ykassa-messenger
-npm run start --workspace=@alekstar79/ykassa-messenger
+node apps/cli/bin/ykassa-mcp.js messenger
 ```
 
 The API must be running separately. The gateway starts only transports enabled
@@ -38,3 +38,9 @@ Available chat commands:
 
 MAX uses long polling, which its API documents for development and testing.
 Webhook delivery is not implemented.
+
+The `ykassa-mcp messenger` CLI command automatically adds the Russian Ministry
+of Digital Development root CA to the Messenger process trust store. TLS
+certificate verification remains enabled; no system-wide certificate changes
+are required. The bundled certificate is verified against the fingerprint from
+the [official distribution](https://gu-st.ru/content/Other/doc/russian_trusted_root_ca.cer).

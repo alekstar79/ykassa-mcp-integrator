@@ -7,12 +7,14 @@ import { CLIENTS_DIR, MCP_SERVER_URL } from './config.js';
 
 export interface CreateAppOptions {
   clientsDir?: string;
+  historyDir?: string;
   mcpUrl?: string;
 }
 
 export function createApp(options: CreateAppOptions = {}): Express {
   const clientsDir = options.clientsDir ?? CLIENTS_DIR;
   const mcpUrl = options.mcpUrl ?? MCP_SERVER_URL;
+  const historyDir = options.historyDir;
   const app = express();
 
   app.disable('x-powered-by');
@@ -20,8 +22,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(express.json({ limit: '2mb' }));
   // TODO: Add JWT authentication and tenant-level authorization before production.
   app.use('/api/clients', createClientPublicRouter({ clientsDir }));
-  app.use('/api', createAskRouter({ clientsDir, mcpUrl }));
-  app.use('/api', createApproveRouter({ clientsDir, mcpUrl }));
+  app.use('/api', createAskRouter({ clientsDir, historyDir, mcpUrl }));
+  app.use('/api', createApproveRouter({ clientsDir, historyDir, mcpUrl }));
   app.use(errorHandler);
 
   return app;

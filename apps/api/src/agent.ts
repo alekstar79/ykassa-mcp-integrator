@@ -25,6 +25,29 @@ import type {
 } from './agentTypes.js';
 
 const MAX_ROUNDTRIPS = 5;
+const CHAT_HISTORY_TOOL_NAME = 'get_chat_history';
+const CHAT_HISTORY_TOOL: ToolDefinition = {
+  name: CHAT_HISTORY_TOOL_NAME,
+  description:
+    'Retrieve relevant earlier user requests, assistant replies, and payment tool results from this conversation session.',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description:
+          'What earlier fact or object to find. Use the current request as the query when it refers to prior conversation.',
+      },
+      limit: {
+        type: 'integer',
+        minimum: 1,
+        maximum: 8,
+        description: 'Maximum number of earlier conversation turns to return.',
+      },
+    },
+    additionalProperties: false,
+  },
+};
 const APPROVAL_RECOVERY_INSTRUCTION =
   'The previous response incorrectly asked for approval in chat text. Do not ask for approval in text. Call only the provided creation tool with the requested operation. The API will stop before execution and return an approval card.';
 
@@ -78,6 +101,7 @@ export async function runAgent(
             properties: {},
           },
       }));
+    tools.push(CHAT_HISTORY_TOOL);
     const executedToolCalls: ToolCallRecord[] = [];
     const history: ChatMessage[] = continuation
       ? [...continuation.messages]
@@ -240,6 +264,71 @@ export async function runAgent(
           toolCallId: malformedToolCall.id,
           content: JSON.stringify({ error: 'Malformed JSON arguments' }),
         });
+      }
+
+      const requestedChatHistory =
+        assistantToolCalls.some(
+          (toolCall) => toolCall.name === CHAT_HISTORY_TOOL_NAME,
+        ) ||
+        malformedToolCalls.some(
+          (toolCall) => toolCall.name === CHAT_HISTORY_TOOL_NAME,
+        );
+      if (requestedChatHistory) {
+        for (const toolCall of assistantToolCalls) {
+          if (toolCall.name === CHAT_HISTORY_TOOL_NAME) {
+            const query = toolCall.args.query;
+            const limit = toolCall.args.limit;
+            if (
+              (query !== undefined && typeof query !== 'string') ||
+              (limit !== undefined &&
+                (typeof limit !== 'number' ||
+                  !Number.isInteger(limit) ||
+                  limit < 1 ||
+                  limit > 8)) ||
+              Object.keys(toolCall.args).some(
+                (key) => key !== 'query' && key !== 'limit',
+              )
+            ) {
+              history.push({
+                role: 'tool',
+                toolCallId: toolCall.id,
+                content: JSON.stringify({
+                  error: 'query must be a string and limit must be an integer from 1 to 8.',
+                }),
+              });
+              continue;
+            }
+            if (deps.getChatHistory === undefined) {
+              history.push({
+                role: 'tool',
+                toolCallId: toolCall.id,
+                content: JSON.stringify({
+                  error: 'History retrieval is unavailable for this request.',
+                }),
+              });
+              continue;
+            }
+            const content = await deps.getChatHistory(
+              typeof query === 'string' ? query : '',
+              typeof limit === 'number' ? limit : 4,
+            );
+            history.push({
+              role: 'tool',
+              toolCallId: toolCall.id,
+              content,
+            });
+            continue;
+          }
+          history.push({
+            role: 'tool',
+            toolCallId: toolCall.id,
+            content: JSON.stringify({
+              error:
+                'Retrieve and review chat history before calling any other tool.',
+            }),
+          });
+        }
+        continue;
       }
 
       const validatedToolCalls: Array<{

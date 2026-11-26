@@ -11,6 +11,7 @@ import { parseAllowedUserIds } from '../messengerConfig';
 import type {
   ClientMode,
   ClientMessengerPlatform,
+  LlmFormState,
   MessengerFormState,
 } from '../types';
 
@@ -20,6 +21,7 @@ export interface ClientZipForm {
   name: string;
   shop_id: string;
   mcp_token: string;
+  llm: LlmFormState;
   clientMode: ClientMode;
   allowed_scenarios: string[];
   approval_threshold: number | undefined;
@@ -64,7 +66,7 @@ function buildReadme(
           ],
           messengers: [
             '2. Запустите API командой `npm run start:api`.',
-            '3. Запустите шлюз командой `npm run start --workspace=@alekstar79/ykassa-messenger`.',
+            '3. Запустите шлюз командой `npm run start:messenger`.',
             `   В \`config.yaml\` включены: ${enabledMessengers.join(', ')}. Разрешённые ID пользователей также указаны в конфиге.`,
             '   Если API и шлюз работают на разных узлах, задайте `API_BASE_URL` в окружении шлюза. Сейчас поддерживаются localhost и приватный IP.',
           ],
@@ -80,7 +82,7 @@ function buildReadme(
           ],
           messengers: [
             '2. Start the API with `npm run start:api`.',
-            '3. Start the gateway with `npm run start --workspace=@alekstar79/ykassa-messenger`.',
+            '3. Start the gateway with `npm run start:messenger`.',
             `   Enabled platforms: ${enabledMessengers.join(', ')}. Allowed user IDs are also in \`config.yaml\`.`,
             '   If the API and gateway run on different hosts, set `API_BASE_URL` in the gateway environment. Only localhost and private IPs are currently supported.',
           ],
@@ -89,11 +91,17 @@ function buildReadme(
     locale === 'ru'
       ? 'Архив содержит секреты в `.env`. Храните его в безопасном месте и не коммитьте этот файл.'
       : 'The archive contains secrets in `.env`. Store it securely and do not commit this file.';
+  const llmEnvironmentHint =
+    locale === 'ru'
+      ? 'Параметры LLM в `.env` клиента имеют приоритет; незаданные поля берутся из корневого `.env`.'
+      : 'LLM settings in the client `.env` take precedence; unset fields use the root `.env`.';
   const header = [`# ${clientName}`, '', placement];
 
   return `${[
     ...header,
     ...instructionsByMode[clientMode],
+    '',
+    llmEnvironmentHint,
     '',
     secretsWarning,
   ].join('\n')}\n`;
@@ -215,12 +223,22 @@ export async function buildClientZip(
   };
   const envComment =
     locale === 'ru'
-      ? '# Секреты. Не коммитить. Файл должен лежать в clients/<name>/.env'
-      : '# Secrets. Do not commit. Place this file at clients/<name>/.env';
+      ? '# Секреты и настройки клиента. Не коммитить. Файл должен лежать в clients/<name>/.env'
+      : '# Client secrets and settings. Do not commit. Place at clients/<name>/.env';
+  const llmEntries = [
+    ['LLM_PROVIDER', form.llm.provider],
+    ['LLM_MODEL', form.llm.model],
+    ['LLM_BASE_URL', form.llm.base_url],
+    ['LLM_API_KEY', form.llm.api_key],
+  ] as const;
   const envFile = [
     envComment,
     `YOOKASSA_SHOP_ID=${quoteEnvValue(shopId)}`,
     `YOOKASSA_MCP_TOKEN=${quoteEnvValue(mcpToken)}`,
+    '# Optional LLM settings; each client value overrides the root .env.',
+    ...llmEntries
+      .filter(([, value]) => value.trim().length > 0)
+      .map(([name, value]) => `${name}=${quoteEnvValue(value)}`),
     ...(form.clientMode === 'messengers' && messengers.telegram.enabled
       ? [
           `TELEGRAM_BOT_TOKEN=${quoteEnvValue(form.messengers.telegram.bot_token)}`,

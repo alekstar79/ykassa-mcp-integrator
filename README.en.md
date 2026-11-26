@@ -20,36 +20,63 @@ through the reference UI, Messenger Gateway (Telegram or MAX), or headless HTTP 
 - **Multiple clients:** each client has its own brand, allowlist, and limits.
 - **Audit log:** MCP calls are written to `logs/mcp-calls.jsonl`.
 
-## Installation
+## Quick start from source
 
-Run the CLI with `npx`:
+Open a terminal in the project folder and run:
 
 ```bash
-npx @alekstar79/ykassa-mcp init my-client
-npx @alekstar79/ykassa-mcp start
-npx @alekstar79/ykassa-mcp web
-npx @alekstar79/ykassa-mcp configurator
-npx @alekstar79/ykassa-mcp messenger
-npx @alekstar79/ykassa-mcp --help
+npm install
+npm run setup
+npm run start:configurator
 ```
 
-`start`, `messenger`, and the web interfaces run in **separate terminals** (or run the API in the background). Open the reference UI with `?client=<name>`; without it the UI falls back to `online-school`:
+In the configurator, enter the client and LLM settings, download the archive,
+and extract its client folder into the project's `clients/` directory. The
+archive contains secrets; do not share it or commit its `.env` file. Skip the
+configurator if the client is already configured. The CLI alternative is
+`npm run client:init -- my-client`; it prompts only for the YooKassa Shop ID
+and MCP token.
+
+LLM settings in `clients/<name>/.env` take precedence over matching values in
+the root `.env`. Missing client settings fall back to the root file, so the
+root `.env` can contain only `PORT` when all LLM values are set per client.
+
+Run services in separate terminals from the project folder:
+
+The `messenger` command automatically uses the verified Ministry of Digital
+Development root certificate for MAX without changing the system certificate
+store. TLS verification remains enabled.
 
 ```bash
-# terminal 1
-npx @alekstar79/ykassa-mcp start
-# terminal 2
-npx @alekstar79/ykassa-mcp messenger
-# terminal 3
-npx @alekstar79/ykassa-mcp web
-# browser: http://127.0.0.1:5173/?client=my-client
+# terminal 1: API
+npm start
+# terminal 2: Telegram and/or MAX
+npm run start:messenger
+# terminal 3: Reference UI (optional)
+npm run start:web
 ```
 
-Alternatively, install it globally:
+Open the Reference UI at `http://127.0.0.1:5173/?client=my-client`.
+Start the configurator with `npm run start:configurator`.
+
+## Run with the CLI
+
+From the installed project, use the local CLI without a global install:
 
 ```bash
-npm i -g @alekstar79/ykassa-mcp
+npm exec -- ykassa-mcp --help
+npm exec -- ykassa-mcp start:api
+npm exec -- ykassa-mcp start:messenger
+```
+
+To run `ykassa-mcp` directly, install the CLI globally:
+
+```bash
+npm install --global @alekstar79/ykassa-mcp
+ykassa-mcp --help
 ykassa-mcp init my-client
+ykassa-mcp start:api
+ykassa-mcp start:messenger
 ```
 
 Packages for integrating the components into your application:
@@ -58,6 +85,20 @@ Packages for integrating the components into your application:
 npm i @alekstar79/ykassa-contracts   # types, Zod schema, and palette
 npm i @alekstar79/ykassa-api         # headless API
 ```
+
+Configure the provider and model in the configurator or in
+`clients/<name>/.env`. When editing the file manually, put each variable on a
+separate line:
+
+```dotenv
+LLM_PROVIDER=openai
+LLM_MODEL=your-model-name
+LLM_BASE_URL=https://your-llm-provider.example/v1
+LLM_API_KEY=your-llm-api-key
+```
+
+Client `.env` values override matching root `.env` values; unset fields fall
+back to the root file.
 
 Node.js 18 or newer is required. Get `YOOKASSA_SHOP_ID` and
 `YOOKASSA_MCP_TOKEN` from the YooKassa merchant dashboard under
@@ -193,7 +234,16 @@ operation against the current client configuration, live `tools/list`, and
 
 ## LLM providers
 
-Set the provider and model in the root `.env`:
+Set these values in the configurator or in `clients/<name>/.env`. Client
+values override matching values in the root `.env`; unset values fall back to
+the root file. Keep each assignment on its own line.
+
+```dotenv
+LLM_PROVIDER=openai
+LLM_MODEL=your-model-name
+LLM_BASE_URL=https://your-llm-provider.example/v1
+LLM_API_KEY=your-llm-api-key
+```
 
 | `LLM_PROVIDER` | Variables                                                                   |
 |----------------|-----------------------------------------------------------------------------|

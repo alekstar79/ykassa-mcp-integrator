@@ -20,36 +20,63 @@ YooKassa MCP и проверяет операцию перед выполнен�
 - **Несколько клиентов:** для каждого клиента задаются бренд, allowlist и лимиты.
 - **Журнал операций:** вызовы MCP записываются в `logs/mcp-calls.jsonl`.
 
-## Установка
+## Быстрый запуск из исходников
 
-CLI через `npx`:
+Откройте терминал в папке проекта и выполните команды:
 
 ```bash
-npx @alekstar79/ykassa-mcp init my-client
-npx @alekstar79/ykassa-mcp configurator
-npx @alekstar79/ykassa-mcp start
-npx @alekstar79/ykassa-mcp web
-npx @alekstar79/ykassa-mcp messenger
-npx @alekstar79/ykassa-mcp --help
+npm install
+npm run setup
+npm run start:configurator
 ```
 
-`start`, `messenger` и веб-интерфейсы запускаются в **разных терминалах** (или API — в фоне). Reference UI открывайте с параметром `?client=<name>`, иначе он попытается загрузить `online-school` по умолчанию:
+В конфигураторе заполните данные клиента и LLM, скачайте архив и распакуйте
+папку клиента в `clients/` проекта. Архив содержит секреты — не отправляйте его
+посторонним и не коммитьте `.env`. Если клиент уже настроен, конфигуратор
+запускать не нужно. CLI-вариант начальной настройки: `npm run client:init -- my-client`;
+он запросит только Shop ID и MCP-токен.
+
+Настройки LLM из `clients/<name>/.env` имеют приоритет над одноимёнными
+переменными корневого `.env`. Если параметр клиента не задан, API использует
+значение из корневого `.env`. Поэтому корневой файл может содержать только
+`PORT`, если все параметры LLM заданы в `.env` клиента.
+
+Запускайте сервисы в отдельных окнах терминала из папки проекта:
+
+Команда `messenger` автоматически использует проверенный корневой сертификат
+Минцифры для MAX, не изменяя системное хранилище. Проверка TLS остаётся
+включённой.
 
 ```bash
-# терминал 1
-npx @alekstar79/ykassa-mcp start
-# терминал 2
-npx @alekstar79/ykassa-mcp messenger
-# терминал 3
-npx @alekstar79/ykassa-mcp web
-# браузер: http://127.0.0.1:5173/?client=my-client
+# терминал 1: API
+npm start
+# терминал 2: Telegram и/или MAX
+npm run start:messenger
+# терминал 3: Reference UI (необязательно)
+npm run start:web
 ```
 
-Альтернативно, глобальная установка:
+Reference UI откройте по адресу `http://127.0.0.1:5173/?client=my-client`.
+Конфигуратор запускается командой `npm run start:configurator`.
+
+## Запуск через CLI
+
+Из установленного проекта CLI доступен без глобальной установки:
 
 ```bash
-npm i -g @alekstar79/ykassa-mcp
+npm exec -- ykassa-mcp --help
+npm exec -- ykassa-mcp start:api
+npm exec -- ykassa-mcp start:messenger
+```
+
+Для команды `ykassa-mcp` без `npm exec` установите CLI глобально:
+
+```bash
+npm install --global @alekstar79/ykassa-mcp
+ykassa-mcp --help
 ykassa-mcp init my-client
+ykassa-mcp start:api
+ykassa-mcp start:messenger
 ```
 
 Пакеты для интеграции в собственное приложение:
@@ -191,7 +218,19 @@ Telegram или MAX. Текстовое «да» в чате не подтвер
 
 ## LLM-провайдеры
 
-Настрой провайдера и модель в корневом `.env`:
+Настрой провайдера и модель в конфигураторе или в
+`clients/<name>/.env`. Для ручной настройки каждая переменная должна быть на
+отдельной строке:
+
+```dotenv
+LLM_PROVIDER=openai
+LLM_MODEL=your-model-name
+LLM_BASE_URL=https://your-llm-provider.example/v1
+LLM_API_KEY=your-llm-api-key
+```
+
+Переменные в клиентском `.env` перекрывают соответствующие значения в корневом
+`.env`; незаданные значения берутся из корневого файла.
 
 | `LLM_PROVIDER` | Переменные                                                                      |
 |----------------|---------------------------------------------------------------------------------|

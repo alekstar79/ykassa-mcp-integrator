@@ -14,6 +14,12 @@ function validForm(overrides: Partial<ClientZipForm> = {}): ClientZipForm {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-token-123456',
+    llm: {
+      provider: '',
+      model: '',
+      base_url: '',
+      api_key: '',
+    },
     clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,
@@ -110,6 +116,35 @@ describe('buildClientZip', () => {
     expect(configYaml).not.toContain('test-token-123456');
   });
 
+  it('exports optional client LLM settings only to .env', async () => {
+    const { configYaml, env } = await extractZip(
+      validForm({
+        llm: {
+          provider: 'openai',
+          model: 'test-model',
+          base_url: 'https://llm.example/v1',
+          api_key: 'test-llm-key',
+        },
+      }),
+    );
+
+    expect(env).toContain('LLM_PROVIDER="openai"');
+    expect(env).toContain('LLM_MODEL="test-model"');
+    expect(env).toContain('LLM_BASE_URL="https://llm.example/v1"');
+    expect(env).toContain('LLM_API_KEY="test-llm-key"');
+    expect(configYaml).not.toContain('LLM_');
+    expect(configYaml).not.toContain('test-llm-key');
+  });
+
+  it('omits empty optional LLM settings', async () => {
+    const { env } = await extractZip();
+
+    expect(env).not.toContain('LLM_PROVIDER');
+    expect(env).not.toContain('LLM_MODEL');
+    expect(env).not.toContain('LLM_BASE_URL');
+    expect(env).not.toContain('LLM_API_KEY');
+  });
+
   it('exports enabled messenger settings and tokens to the correct files', async () => {
     const form = validForm({
       clientMode: 'messengers',
@@ -152,7 +187,7 @@ describe('buildClientZip', () => {
     expect(configYaml).not.toContain('telegram-secret-token');
     expect(configYaml).not.toContain('max-secret-token');
     expect(readme).toContain(
-      'npm run start --workspace=@alekstar79/ykassa-messenger',
+      'npm run start:messenger',
     );
     expect(readme).toContain('не коммитьте');
   });
@@ -327,7 +362,7 @@ describe('buildClientZip', () => {
 
     expect(readme).toContain('npm run start:api');
     expect(readme).toContain(
-      'npm run start --workspace=@alekstar79/ykassa-messenger',
+      'npm run start:messenger',
     );
     expect(readme).toContain('API_BASE_URL');
     expect(readme).not.toContain('npm run dev');

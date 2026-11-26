@@ -28,6 +28,7 @@ describe('SessionStore', () => {
 
   it('keeps sessions isolated by platform and supports reset', () => {
     const sessions = new SessionStore(5);
+    const telegramSessionId = sessions.getSessionId('telegram', 'same-chat');
     sessions.append('telegram', 'same-chat', {
       role: 'user',
       content: 'telegram',
@@ -36,10 +37,24 @@ describe('SessionStore', () => {
 
     sessions.reset('telegram', 'same-chat');
 
+    expect(sessions.getSessionId('telegram', 'same-chat')).not.toBe(
+      telegramSessionId,
+    );
     expect(sessions.get('telegram', 'same-chat')).toEqual([]);
     expect(sessions.get('max', 'same-chat').map((item) => item.content)).toEqual([
       'max',
     ]);
+  });
+
+  it('clears pending text without changing the conversation session ID', () => {
+    const sessions = new SessionStore(5);
+    const sessionId = sessions.getSessionId('max', 'chat-1');
+    sessions.append('max', 'chat-1', { role: 'user', content: 'pending' });
+
+    sessions.clearMessages('max', 'chat-1');
+
+    expect(sessions.get('max', 'chat-1')).toEqual([]);
+    expect(sessions.getSessionId('max', 'chat-1')).toBe(sessionId);
   });
 
   it('uses the current configured limit when appending', () => {

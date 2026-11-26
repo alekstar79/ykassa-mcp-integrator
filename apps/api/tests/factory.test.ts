@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createProviderFromEnv } from '../src/factory.js';
+import {
+  createProviderFromEnv,
+  resolveLlmEnvironment,
+} from '../src/factory.js';
 
 describe('createProviderFromEnv', () => {
   it.each([
@@ -59,5 +62,31 @@ describe('createProviderFromEnv', () => {
         LLM_MODEL: 'test-model',
       }),
     ).toThrow('Unknown LLM_PROVIDER: unknown');
+  });
+});
+
+describe('resolveLlmEnvironment', () => {
+  it('prefers non-empty client settings and falls back to root defaults', () => {
+    expect(
+      resolveLlmEnvironment(
+        {
+          LLM_PROVIDER: 'openai',
+          LLM_MODEL: 'client-model',
+          LLM_API_KEY: 'client-key',
+          LLM_BASE_URL: '',
+        },
+        {
+          LLM_PROVIDER: 'anthropic',
+          LLM_MODEL: 'root-model',
+          LLM_API_KEY: 'root-key',
+          LLM_BASE_URL: 'https://root.example/v1',
+        },
+      ),
+    ).toEqual({
+      LLM_PROVIDER: 'openai',
+      LLM_MODEL: 'client-model',
+      LLM_API_KEY: 'client-key',
+      LLM_BASE_URL: 'https://root.example/v1',
+    });
   });
 });

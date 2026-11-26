@@ -11,11 +11,14 @@
 git clone https://github.com/alekstar79/ykassa-mcp-integrator.git ykassa-mcp-integrator
 cd ykassa-mcp-integrator
 npm install
+npm run setup
 cp .env.example .env
 ```
 
-Set `LLM_PROVIDER`, `LLM_MODEL`, and the provider's `LLM_API_KEY` in the root
-`.env`. `LLM_BASE_URL` is optional for OpenAI-compatible endpoints.
+Configure LLM settings in a client's `clients/<name>/.env`. These values
+override matching values in the root `.env`; unset values fall back to the
+root file. This lets the root `.env` contain only `PORT` when each client has
+its own LLM settings.
 
 Create a client and its secret file:
 
@@ -44,16 +47,15 @@ Fill `YOOKASSA_SHOP_ID` and `YOOKASSA_MCP_TOKEN` in
 Run each service in a separate terminal:
 
 ```sh
-npm run start:api
-npm run dev
+npm start
+npm run start:messenger
+npm run start:web
 npm run dev:configurator
-npm run start --workspace=@alekstar79/ykassa-messenger
 ```
 
 Run services in separate terminals. The API listens on port 3000, the
 reference UI on port 5173, and the configurator on port 5174. The Messenger
-workspace starts enabled Telegram and MAX clients. For a built install, use
-`npx @alekstar79/ykassa-mcp messenger`. See
+command starts enabled Telegram and MAX clients. See
 `apps/messenger/README.md` for bot setup and chat commands.
 
 **Local LLM development.** If you don't have an API key from OpenAI, Anthropic, or Google, you can run a local OpenAI-compatible proxy to GitHub Copilot. See `docs/copilot-proxy.md` for setup and risks. This is a development-only option, not for production.
@@ -83,15 +85,21 @@ copies the UI assets and client template into `apps/cli/` using
 
 ## Adding a client
 
-Copy the example and fill its secret file:
+The configurator is the recommended option:
 
 ```sh
-cp -r clients/example clients/my-client
-cp clients/my-client/.env.example clients/my-client/.env
+npm run start:configurator
 ```
 
-Edit `clients/my-client/config.yaml`, set the shop ID and MCP token in
-`clients/my-client/.env`, then open
+Download and extract the client archive into `clients/`. Alternatively, use
+the CLI to create a client and enter YooKassa credentials:
+
+```sh
+npm run client:init -- my-client
+```
+
+Add LLM settings to `clients/my-client/.env` if they are not set in the root
+`.env`. Edit `clients/my-client/config.yaml`, then open
 `http://localhost:5173/?client=my-client`.
 
 To connect a Telegram bot, configure the client's `messengers.telegram`

@@ -121,6 +121,46 @@ describe('useClientApi', () => {
     expect(api.pendingApproval.value).toBeNull();
   });
 
+  it('reuses the returned session ID for follow-up requests', async () => {
+    const sessionId = '123e4567-e89b-42d3-a456-426614174000';
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          reply: 'First reply.',
+          session_id: sessionId,
+          requires_approval: false,
+          tool_calls: [],
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          reply: 'Follow-up reply.',
+          session_id: sessionId,
+          requires_approval: false,
+          tool_calls: [],
+        }),
+      );
+    const api = useClientApi(ref('online-school'));
+
+    await api.sendRequest(payload);
+    await api.sendRequest({
+      message: 'Check the previous payment.',
+      attachment: null,
+    });
+
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)),
+    ).not.toHaveProperty('session_id');
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)),
+    ).toMatchObject({
+      session_id: sessionId,
+      messages: [
+        { role: 'user', content: 'Check the previous payment.' },
+      ],
+    });
+  });
+
   it('sends saved client-default overrides with the request', async () => {
     window.localStorage.setItem(
       'ykassa_ui_defaults',

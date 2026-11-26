@@ -142,7 +142,7 @@ export class MessengerGateway {
 
     const requestText = message.text?.trim() ?? '';
     const holdAttachmentRequest = () => {
-      this.sessions.reset(message.platform, message.chatId);
+      this.sessions.clearMessages(message.platform, message.chatId);
       this.sessions.append(
         message.platform,
         message.chatId,
@@ -206,7 +206,7 @@ export class MessengerGateway {
       const pendingRequest = this.sessions
         .get(message.platform, message.chatId)
         .at(-1)?.content;
-      this.sessions.reset(message.platform, message.chatId);
+      this.sessions.clearMessages(message.platform, message.chatId);
       messages = [{
         role: 'user',
         content:
@@ -215,7 +215,7 @@ export class MessengerGateway {
           localized(locale, 'attachmentPrompt'),
       }];
     } else {
-      this.sessions.reset(message.platform, message.chatId);
+      this.sessions.clearMessages(message.platform, message.chatId);
       messages = [{ role: 'user', content: requestText }];
     }
     this.sessions.clearExpired();
@@ -234,6 +234,7 @@ export class MessengerGateway {
         this.options.client,
         messages,
         attachment,
+        this.sessions.getSessionId(message.platform, message.chatId),
       );
     } catch (error) {
       await this.auditMessage(message, 'api_error');

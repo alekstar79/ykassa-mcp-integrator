@@ -24,6 +24,12 @@ function createHarness(initiallyValid = true) {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-token-123456',
+    llm: {
+      provider: 'openai',
+      model: 'test-model',
+      base_url: 'https://llm.example/v1',
+      api_key: 'test-llm-key',
+    },
     clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,
@@ -170,6 +176,7 @@ describe('useDownload', () => {
         name: form.value.name,
         shop_id: form.value.shop_id,
         mcp_token: form.value.mcp_token,
+        llm: form.value.llm,
         clientMode: 'reference-ui',
         messengers: {
           telegram: expect.objectContaining({ enabled: false }),

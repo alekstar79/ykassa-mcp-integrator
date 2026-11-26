@@ -46,6 +46,7 @@ export interface AgentResult {
 export interface AgentDeps {
   provider: LLMProvider;
   model: string;
+  getChatHistory?: (query: string, limit: number) => Promise<string>;
   logToolCall?: (entry: {
     tool: string;
     args: unknown;

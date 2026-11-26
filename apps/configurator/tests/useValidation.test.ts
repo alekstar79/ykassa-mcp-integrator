@@ -13,6 +13,12 @@ function validForm(): Ref<FormState> {
     name: 'online-school',
     shop_id: '123456789',
     mcp_token: 'test-mcp-token-123456',
+    llm: {
+      provider: '',
+      model: '',
+      base_url: '',
+      api_key: '',
+    },
     clientMode: 'reference-ui',
     allowed_scenarios: ['create_payment'],
     approval_threshold: 1000,

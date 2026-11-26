@@ -2,7 +2,7 @@
   "name": "@alekstar79/ykassa-mcp",
   "description": "YooKassa MCP integrator CLI: initialize clients, start the API and Messenger, and serve the reference UI or configurator.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "license": "MIT",
   "type": "module",
   "private": false,
@@ -29,6 +29,7 @@
   "sideEffects": false,
   "files": [
     "bin",
+    "certs",
     "dist",
     "templates",
     "README.md",
@@ -38,9 +39,9 @@
     "prepublishOnly": "node ../../scripts/sync-templates.mjs"
   },
   "dependencies": {
-    "@alekstar79/ykassa-api": "^1.1.1",
-    "@alekstar79/ykassa-contracts": "^1.1.1",
-    "@alekstar79/ykassa-messenger": "^1.1.1",
+    "@alekstar79/ykassa-api": "^1.1.2",
+    "@alekstar79/ykassa-contracts": "^1.1.2",
+    "@alekstar79/ykassa-messenger": "^1.1.2",
     "express": "^5.3.0"
   },
   "engines": {
