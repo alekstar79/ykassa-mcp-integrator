@@ -1,4 +1,4 @@
-import type { ClientDefaults, ClientVatCode } from '@alekstar79/ykassa-contracts';
+import type { ClientDefaults, ClientLimits, ClientUiConfig, ClientVatCode } from '@alekstar79/ykassa-contracts';
 
 export interface ProposedActionItem {
   tool: string;
@@ -26,7 +26,13 @@ export interface ApiResponse {
   warning?: string;
 }
 
-export type { PublicClientConfig } from '@alekstar79/ykassa-contracts';
+export interface PublicClientConfig {
+  brand: { display_name?: string };
+  allowed_scenarios: string[];
+  approval_threshold: number;
+  ui: ClientUiConfig;
+  limits: ClientLimits;
+}
 
 export interface AvailableClient {
   name: string;

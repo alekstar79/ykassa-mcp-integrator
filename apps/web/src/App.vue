@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch, type CSSProperties } from 'vue';
+import { computed, ref, watch, type CSSProperties, type Ref } from 'vue';
+
+import type { PublicClientConfig, RequestPayload } from './types';
 import { CLIENT_CONFIG_DEFAULTS } from '@alekstar79/ykassa-contracts/defaults';
 import { ACCENT_PALETTE } from '@alekstar79/ykassa-contracts/palette';
+import { useClientApi } from './composables/useClientApi';
+import { usePublicClient } from './composables/usePublicClient';
+import { translations, type Locale, type Messages } from './i18n';
 import ClientHeader from './components/ClientHeader.vue';
 import ChatHistory from './components/ChatHistory.vue';
 import RequestForm from './components/RequestForm.vue';
-import { useClientApi } from './composables/useClientApi';
-import { usePublicClient } from './composables/usePublicClient';
-import { translations, type Locale } from './i18n';
-import type { RequestPayload } from './types';
 
 const THEME_STORAGE_KEY = 'yookassa-theme';
 const LOCALE_STORAGE_KEY = 'yookassa-locale';
@@ -18,9 +19,11 @@ const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
 const theme = ref<Theme>(storedTheme === 'dark' ? 'dark' : 'light');
 const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
 const locale = ref<Locale>(storedLocale === 'en' ? 'en' : 'ru');
-const messages = computed(() => translations[locale.value]);
+const messages = computed<Messages>(() => translations[locale.value]);
+
 document.documentElement.setAttribute('data-theme', theme.value);
 document.documentElement.lang = locale.value;
+
 watch(
   locale,
   (value) => {
@@ -33,7 +36,7 @@ watch(
 const {
   clientName,
   availableClients,
-  publicClient,
+  publicClient: publicClientRef,
   clientError,
   isClientLoading,
   requiresClientSelection,
@@ -42,6 +45,8 @@ const {
   retryClientLoad,
   backToClientSelection,
 } = usePublicClient(locale);
+const publicClient: Ref<PublicClientConfig | null> = publicClientRef;
+
 const {
   chatTurns,
   isHistoryLoading,
@@ -62,9 +67,10 @@ const clientStyle = computed<CSSProperties>(() => {
     ...CLIENT_CONFIG_DEFAULTS.ui,
     ...publicClient.value?.ui,
   };
-  const style: CSSProperties = {};
 
+  const style: CSSProperties = {};
   const accent = ACCENT_PALETTE[ui.accent][theme.value];
+
   style['--accent'] = accent.bg;
   style['--accent-foreground'] = accent.fg;
   style['--accent-hover'] = accent.hover;
@@ -88,6 +94,7 @@ const clientStyle = computed<CSSProperties>(() => {
         : theme.value === 'dark'
           ? '0 1px 3px rgb(0 0 0 / 24%)'
           : '0 1px 3px rgb(17 24 39 / 7%)';
+
   return style;
 });
 
