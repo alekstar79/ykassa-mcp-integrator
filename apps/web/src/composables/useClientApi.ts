@@ -257,11 +257,15 @@ export function useClientApi(
         session_id: sessionId,
       });
       const response = await fetch(`${API_URL}/api/history?${query}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const body: unknown = await response.json();
       if (!isHistoryResponse(body)) {
         throw new Error('The API returned an invalid chat history.');
       }
+
       if (requestVersion !== historyLoadVersion) return;
 
       chatTurns.value = groupHistory(body.messages);

@@ -8,14 +8,14 @@ The root workspace `@alekstar79/ykassa-workspace` is a YooKassa MCP integrator: 
 
 Six workspaces:
 
-| Path                 | Package                           | Purpose                                                                |
-|----------------------|-----------------------------------|------------------------------------------------------------------------|
-| `apps/api`           | `@alekstar79/ykassa-api`          | Headless API: MCP client, LLM orchestration, approvals, audit          |
-| `apps/web`           | `@alekstar79/ykassa-web`          | Vue 3 reference UI                                                     |
-| `apps/messenger`     | `@alekstar79/ykassa-messenger`    | Telegram/MAX gateway; independent HTTP client of the API               |
-| `apps/configurator`  | `@alekstar79/ykassa-configurator` | Web configurator that generates `config.yaml` + `.env` as a zip        |
+| Path                 | Package                           | Purpose                                                                          |
+|----------------------|-----------------------------------|----------------------------------------------------------------------------------|
+| `apps/api`           | `@alekstar79/ykassa-api`          | Headless API: MCP client, LLM orchestration, approvals, audit                    |
+| `apps/web`           | `@alekstar79/ykassa-web`          | Vue 3 reference UI                                                               |
+| `apps/messenger`     | `@alekstar79/ykassa-messenger`    | Telegram/MAX gateway; independent HTTP client of the API                         |
+| `apps/configurator`  | `@alekstar79/ykassa-configurator` | Web configurator that generates `config.yaml` + `.env` as a zip                  |
 | `apps/cli`           | `@alekstar79/ykassa-mcp`          | CLI umbrella: `npx @alekstar79/ykassa-mcp init/start/web/configurator/messenger` |
-| `packages/contracts` | `@alekstar79/ykassa-contracts`    | Shared types, Zod schema, enum values, palette                         |
+| `packages/contracts` | `@alekstar79/ykassa-contracts`    | Shared types, Zod schema, enum values, palette                                   |
 
 `apps/api`, `apps/web`, `apps/messenger`, and `apps/configurator` are independent: client workspaces do not import API code. They communicate via HTTP contract (`docs/api-contract.md`) and `config.yaml`.
 
@@ -56,6 +56,6 @@ Six workspaces:
 - `apps/messenger/README.md` — Telegram/MAX setup, chat commands, and E2E runbooks.
 
 Before adding a new field to `config.yaml` or a new setting to the UI, read
-`docs/decisions.md`. If a feature was cancelled, do not reintroduce it without
+`docs/decisions.md`. If a feature was canceled, do not reintroduce it without
 discussion. When adding a replacement, remove its obsolete related fields
 instead of keeping them "just in case".

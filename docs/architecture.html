@@ -6656,7 +6656,36 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     </div>
     <!-- Info Cards -->
     <div class="cards">
-
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Headless API: одно приложение</h3>
+        </div>
+        <ul>
+          <li>createApp монтирует routes ask, approve и clientPublic; agent.ts координирует вызовы LLM и YooKassa MCP.</li>
+          <li>Внутренние шаги рабочей копии: enrich.ts дополняет аргументы, validateToolCall.ts проверяет их по схеме, overrides приходят из UI, risk gate решает вопрос подтверждения.</li>
+          <li>Client files и in-memory approval state остаются деталями API, а не отдельными приложениями.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Общий контракт</h3>
+        </div>
+        <ul>
+          <li>@alekstar79/ykassa-contracts экспортирует Zod schema, типы, defaults и палитру; API, Reference UI, Messenger и Configurator подключают один workspace package.</li>
+          <li>Configurator формирует клиентский ZIP, а Reference UI показывает настроенный интерфейс без импорта кода Configurator.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Вызовы и аудит</h3>
+        </div>
+        <ul>
+          <li>Headless API выбирает LLM provider через factory, выполняет MCP callTool и записывает результат в logs/mcp-calls.jsonl с shop_id.</li>
+        </ul>
+      </div>
     </div>
     <nav class="node-outline no-print" id="node-outline" hidden aria-labelledby="node-outline-title">
       <div class="node-outline-head">

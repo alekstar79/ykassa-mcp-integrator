@@ -168,7 +168,7 @@ flowchart LR
 
 Интерактивная карта — [architecture.html](https://alekstar79.github.io/ykassa-mcp-integrator/architecture.html). Она показывает основные компоненты API, Reference UI и Messenger Gateway. Клик по узлу открывает Semantic passport с назначением компонента, связями и потоками данных.
 
-Презентация проекта (10 слайдов): [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html). Обзор Headless API, архитектура без общих импортов, поток `/api/ask → /api/approve`, три эндпоинта для собственного UI, MCP-инструменты и политика, LLM-провайдеры, аудит и метрики.
+Презентация проекта (11 слайдов): [presentation.html](https://alekstar79.github.io/ykassa-mcp-integrator/presentation.html). Обзор Headless API, Reference UI и Messenger Gateway, поток `/api/ask → /api/approve`, пять эндпоинтов для собственного UI, MCP-инструменты и политика, LLM-провайдеры, аудит и метрики.
 
 - `apps/api` - headless API: MCP-клиент, LLM-оркестрация, подтверждения и аудит.
   Пакет `@alekstar79/ykassa-api` можно использовать как библиотеку.
