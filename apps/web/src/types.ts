@@ -1,4 +1,4 @@
-import type { ClientDefaults } from '@alekstar79/ykassa-contracts';
+import type { ClientDefaults, ClientVatCode } from '@alekstar79/ykassa-contracts';
 
 export interface ProposedActionItem {
   tool: string;
@@ -58,6 +58,10 @@ export interface ChatTurn {
   toolCalls: ToolCall[];
 }
 
-export interface UiDefaults extends ClientDefaults {
+export interface UiDefaults {
+  currency: ClientDefaults['currency'];
+  vat_code: ClientVatCode;
+  capture: ClientDefaults['capture'];
   return_url: string;
+  invoice_expiry_days: ClientDefaults['invoice_expiry_days'];
 }

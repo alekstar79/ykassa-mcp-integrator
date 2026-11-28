@@ -5,6 +5,7 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
 } from 'vue';
 import { CLIENT_VAT_CODES } from '@alekstar79/ykassa-contracts';
 import type { ClientVatCode } from '@alekstar79/ykassa-contracts';
@@ -36,25 +37,25 @@ const VAT_CODE_MESSAGE_KEYS = {
   12: 'vatTwentyTwoCalculated',
 } satisfies Record<ClientVatCode, keyof Messages>;
 
-const managerRequest = ref('');
-const attachment = ref<Attachment | null>(null);
-const attachmentInput = ref<HTMLInputElement | null>(null);
-const requestInput = ref<HTMLTextAreaElement | null>(null);
-const actionsRef = ref<HTMLElement | null>(null);
-const settingsDialog = ref<HTMLDialogElement | null>(null);
-const currencySelectRoot = ref<HTMLDivElement | null>(null);
-const currencyTrigger = ref<HTMLButtonElement | null>(null);
-const currencyListbox = ref<HTMLDivElement | null>(null);
-const vatSelectRoot = ref<HTMLDivElement | null>(null);
-const vatTrigger = ref<HTMLButtonElement | null>(null);
-const vatListbox = ref<HTMLDivElement | null>(null);
+const managerRequest = ref<string>('');
+const attachment = shallowRef<Attachment | null>(null);
+const attachmentInput = shallowRef<HTMLInputElement | null>(null);
+const requestInput = shallowRef<HTMLTextAreaElement | null>(null);
+const actionsRef = shallowRef<HTMLElement | null>(null);
+const settingsDialog = shallowRef<HTMLDialogElement | null>(null);
+const currencySelectRoot = shallowRef<HTMLDivElement | null>(null);
+const currencyTrigger = shallowRef<HTMLButtonElement | null>(null);
+const currencyListbox = shallowRef<HTMLDivElement | null>(null);
+const vatSelectRoot = shallowRef<HTMLDivElement | null>(null);
+const vatTrigger = shallowRef<HTMLButtonElement | null>(null);
+const vatListbox = shallowRef<HTMLDivElement | null>(null);
 const fileError = ref<FileErrorKey | null>(null);
 const settingsError = ref<SettingsErrorKey | null>(null);
-const menuOpen = ref(false);
+const menuOpen = ref<boolean>(false);
 const settings = ref<UiDefaults>(readUiDefaults());
-const currencyOptionsOpen = ref(false);
+const currencyOptionsOpen = ref<boolean>(false);
 const activeCurrency = ref<UiDefaults['currency']>(settings.value.currency);
-const vatOptionsOpen = ref(false);
+const vatOptionsOpen = ref<boolean>(false);
 const activeVatCode = ref<ClientVatCode>(settings.value.vat_code);
 const CURRENCY_CODES: readonly UiDefaults['currency'][] = ['RUB', 'USD', 'EUR'];
 
@@ -85,8 +86,8 @@ const submitDisabled = computed(
 );
 
 const emit = defineEmits<{
-  submit: [payload: RequestPayload];
-  clearError: [];
+  (event: 'submit', payload: RequestPayload): void;
+  (event: 'clearError'): void;
 }>();
 
 function handleDocumentPointerDown(event: PointerEvent): void {
@@ -151,7 +152,10 @@ function resizeRequestInput(): void {
 
 function removeAttachment(): void {
   attachment.value = null;
-  if (attachmentInput.value) attachmentInput.value.value = '';
+
+  if (attachmentInput.value) {
+    attachmentInput.value.value = '';
+  }
 }
 
 function openAttachmentPicker(): void {
@@ -196,9 +200,15 @@ function closeCurrencyOptions(restoreFocus = true): void {
 }
 
 function focusCurrencyOption(currency: UiDefaults['currency']): void {
-  currencyListbox.value
-    ?.querySelector<HTMLButtonElement>(`[data-currency="${currency}"]`)
-    ?.focus();
+  for (const child of Array.from(currencyListbox.value?.children ?? [])) {
+    if (
+      child instanceof HTMLButtonElement &&
+      child.dataset.currency === currency
+    ) {
+      child.focus();
+      return;
+    }
+  }
 }
 
 function moveActiveCurrency(direction: -1 | 1): void {
@@ -284,9 +294,15 @@ function closeVatOptions(restoreFocus = true): void {
 }
 
 function focusVatOption(vatCode: ClientVatCode): void {
-  vatListbox.value
-    ?.querySelector<HTMLButtonElement>(`[data-vat-code="${vatCode}"]`)
-    ?.focus();
+  for (const child of Array.from(vatListbox.value?.children ?? [])) {
+    if (
+      child instanceof HTMLButtonElement &&
+      child.dataset.vatCode === String(vatCode)
+    ) {
+      child.focus();
+      return;
+    }
+  }
 }
 
 function moveActiveVatCode(direction: -1 | 1): void {
@@ -294,8 +310,6 @@ function moveActiveVatCode(direction: -1 | 1): void {
   const nextIndex =
     (index + direction + CLIENT_VAT_CODES.length) % CLIENT_VAT_CODES.length;
   const nextVatCode = CLIENT_VAT_CODES[nextIndex];
-  if (nextVatCode === undefined) return;
-
   activeVatCode.value = nextVatCode;
   void nextTick(() => focusVatOption(nextVatCode));
 }
